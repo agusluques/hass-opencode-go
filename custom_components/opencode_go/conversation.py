@@ -32,6 +32,7 @@ from .const import (
     CONF_REASONING_EFFORT,
     CONF_REASONING_SUMMARY,
     CONF_TEXT_VERBOSITY,
+    DEFAULT_NAME,
     DOMAIN,
     RECOMMENDED_REASONING_EFFORT,
     RECOMMENDED_REASONING_SUMMARY,
@@ -109,6 +110,11 @@ class OpenCodeGoConversationEntity(
         self._subentry = subentry
         self._api_key = api_key
         self._attr_unique_id = subentry.subentry_id
+        model = self._options.get(CONF_MODEL)
+        if isinstance(model, str) and model:
+            # Show the model in pickers (AI suggestions, entity list) while the
+            # entity ID stays based on the configured name.
+            self._attr_name = model.removeprefix("opencode-go/")
         self._attr_device_info = dr.DeviceInfo(
             identifiers={(DOMAIN, subentry.subentry_id)},
             name=self._options.get(CONF_NAME) or subentry.title,
@@ -124,6 +130,11 @@ class OpenCodeGoConversationEntity(
     @property
     def _options(self) -> Any:
         return self._subentry.data
+
+    @property
+    def suggested_object_id(self) -> str | None:
+        """Keep entity IDs tied to the name, not to the model."""
+        return self._options.get(CONF_NAME) or DEFAULT_NAME
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:

@@ -289,3 +289,8 @@ async def test_async_run_chat_log_without_no_entities_prompt_constant(
 def test_json_default_date_and_datetime():
     assert json_default(date(2026, 3, 3)) == "2026-03-03"
     assert json_default(datetime(2026, 3, 3, 15, 0, 0)) == "2026-03-03T15:00:00"
+
+
+def test_name_shows_model_but_entity_id_uses_config_name(mock_entity):
+    assert mock_entity.name == "deepseek-v4.1-flash"
+    assert mock_entity.suggested_object_id == "OpenCode Go"

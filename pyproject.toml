@@ -1,6 +1,6 @@
 [project]
 name = "hass-opencode-go"
-version = "0.6.0"
+version = "0.6.1"
 description = "Home Assistant custom integration for OpenCode Go"
 readme = "README.md"
 license = { file = "LICENSE" }

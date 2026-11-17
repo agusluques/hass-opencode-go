@@ -59,7 +59,7 @@
             "prompt": "Indica cómo debe responder el modelo. Puede ser una plantilla.",
             "llm_hass_api": "Expone las entidades y servicios de Home Assistant al modelo mediante la API de Assist, para que pueda controlar dispositivos y responder sobre tu casa. Desactivalo si solo querés respuestas generales.",
             "model": "Modelo que usará este agente. La lista se carga desde tu catálogo de OpenCode Go.",
-            "name": "Nombre usado para el device y los entity IDs. El modelo se muestra aparte, así podés cambiarlo después sin renombrar entidades."
+            "name": "Nombre usado para el device y los entity IDs. Los selectores y listas de entidades muestran este nombre junto al modelo actual, así podés cambiar el modelo sin renombrar entidades."
           }
         },
         "advanced": {
@@ -100,7 +100,7 @@
           },
           "data_description": {
             "model": "Modelo que usará esta tarea de IA. La lista se carga desde tu catálogo de OpenCode Go.",
-            "name": "Nombre usado para el device y los entity IDs. El modelo se muestra aparte, así podés cambiarlo después sin renombrar entidades.",
+            "name": "Nombre usado para el device y los entity IDs. Los selectores y listas de entidades muestran este nombre junto al modelo actual, así podés cambiar el modelo sin renombrar entidades.",
             "image_generation": "Publica ai_task.generate_image. Solo los modelos Responses (por ejemplo gpt-6-luna o grok-4.7) pueden generar imágenes; en otros modelos se ignora."
           }
         },

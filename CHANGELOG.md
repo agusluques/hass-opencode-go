@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-11-17
+
+### Fixed
+
+- Conversation agents and AI Tasks now show the model in pickers and entity
+  lists (for example `OpenCode Go deepseek-v4.1-flash`) while their entity IDs
+  stay tied to the configured name (`conversation.open_code_go`,
+  `ai_task.open_code_go_2`).
+
 ## [0.6.0] - 2026-11-17
 
 ### Added
@@ -138,7 +147,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - API key config flow, conversation agent and AI Task support.
 - HACS-compatible repository layout and initial brand assets.
 
-[Unreleased]: https://github.com/agusluques/hass-opencode-go/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/agusluques/hass-opencode-go/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/agusluques/hass-opencode-go/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/agusluques/hass-opencode-go/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/agusluques/hass-opencode-go/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/agusluques/hass-opencode-go/compare/v0.4.0...v0.4.1

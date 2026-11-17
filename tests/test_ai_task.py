@@ -174,3 +174,8 @@ async def test_generate_image_returns_decoded_png(mock_ai_task_entity):
     assert result.height == 3
     assert result.mime_type == "image/png"
     assert result.conversation_id == "conv-test"
+
+
+def test_name_shows_model_but_entity_id_uses_config_name(mock_ai_task_entity):
+    assert mock_ai_task_entity.name == "deepseek-v4.1-flash"
+    assert mock_ai_task_entity.suggested_object_id == "OpenCode Go"
