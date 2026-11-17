@@ -17,7 +17,9 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util.json import json_loads
 
 from .const import (
+    CONF_IMAGE_GENERATION,
     CONF_MODEL,
+    CONF_NAME,
     CONF_REASONING_EFFORT,
     CONF_REASONING_SUMMARY,
     CONF_TEXT_VERBOSITY,
@@ -83,13 +85,22 @@ class OpenCodeGoAITaskEntity(ai_task.AITaskEntity):
             | ai_task.AITaskEntityFeature.SUPPORT_ATTACHMENTS
         )
         model = subentry.data.get(CONF_MODEL)
-        if isinstance(model, str) and supports_image_generation(model):
+        if (
+            isinstance(model, str)
+            and supports_image_generation(model)
+            and subentry.data.get(CONF_IMAGE_GENERATION, True)
+        ):
             features |= ai_task.AITaskEntityFeature.GENERATE_IMAGE
         self._attr_supported_features = features
 
     @property
     def _options(self) -> Any:
         return self._subentry.data
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Expose the configured model without tying entity IDs to it."""
+        return {"model": self._options.get(CONF_MODEL)}
 
     @property
     def _model(self) -> str:
@@ -106,7 +117,7 @@ class OpenCodeGoAITaskEntity(ai_task.AITaskEntity):
     def device_info(self) -> dict:
         return {
             "identifiers": {(DOMAIN, self._subentry.subentry_id)},
-            "name": self._subentry.title,
+            "name": self._options.get(CONF_NAME) or self._subentry.title,
             "manufacturer": "OpenCode",
             "entry_type": dr.DeviceEntryType.SERVICE,
         }

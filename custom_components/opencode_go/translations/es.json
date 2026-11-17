@@ -14,11 +14,20 @@
         "data": {
           "api_key": "Clave de API"
         }
+      },
+      "models": {
+        "title": "OpenCode Go — modelos",
+        "description": "Elegí el modelo para tu primer agente de conversación y para la AI Task. Podés cambiarlos después o agregar más agentes.",
+        "data": {
+          "conversation_model": "Modelo de conversación",
+          "ai_task_model": "Modelo de AI Task"
+        }
       }
     },
     "error": {
       "invalid_auth": "La clave de API no es válida.",
-      "cannot_connect": "No se pudo conectar con OpenCode Go. Inténtalo de nuevo."
+      "cannot_connect": "No se pudo conectar con OpenCode Go. Inténtalo de nuevo.",
+      "no_models": "No se encontraron modelos compatibles para esta API key."
     },
     "abort": {
       "already_configured": "OpenCode Go ya está configurado."
@@ -43,12 +52,14 @@
             "llm_hass_api": "Controlar Home Assistant",
             "prompt": "Prompt",
             "recommended": "Ajustes de modelo recomendados",
-            "model": "Modelo"
+            "model": "Modelo",
+            "name": "Nombre"
           },
           "data_description": {
             "prompt": "Indica cómo debe responder el modelo. Puede ser una plantilla.",
-            "llm_hass_api": "Selecciona la API de Home Assistant que se expondrá al modelo.",
-            "model": "Modelo que usará este agente. La lista se carga desde tu catálogo de OpenCode Go."
+            "llm_hass_api": "Expone las entidades y servicios de Home Assistant al modelo mediante la API de Assist, para que pueda controlar dispositivos y responder sobre tu casa. Desactivalo si solo querés respuestas generales.",
+            "model": "Modelo que usará este agente. La lista se carga desde tu catálogo de OpenCode Go.",
+            "name": "Nombre usado para el device y los entity IDs. El modelo se muestra aparte, así podés cambiarlo después sin renombrar entidades."
           }
         },
         "advanced": {
@@ -83,10 +94,14 @@
         "init": {
           "data": {
             "recommended": "Ajustes de modelo recomendados",
-            "model": "Modelo"
+            "model": "Modelo",
+            "name": "Nombre",
+            "image_generation": "Generar imágenes"
           },
           "data_description": {
-            "model": "Modelo que usará esta tarea de IA. La lista se carga desde tu catálogo de OpenCode Go."
+            "model": "Modelo que usará esta tarea de IA. La lista se carga desde tu catálogo de OpenCode Go.",
+            "name": "Nombre usado para el device y los entity IDs. El modelo se muestra aparte, así podés cambiarlo después sin renombrar entidades.",
+            "image_generation": "Publica ai_task.generate_image. Solo los modelos Responses (por ejemplo gpt-6-luna o grok-4.7) pueden generar imágenes; en otros modelos se ignora."
           }
         },
         "advanced": {

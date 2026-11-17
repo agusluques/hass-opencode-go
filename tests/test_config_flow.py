@@ -14,6 +14,7 @@ import voluptuous as vol
 
 from custom_components.opencode_go import async_migrate_entry
 from custom_components.opencode_go.config_flow import (
+    OpenCodeGoAITaskSubentryFlow,
     OpenCodeGoConversationConfigFlow,
     OpenCodeGoConversationSubentryFlow,
     _async_fetch_models,
@@ -21,6 +22,7 @@ from custom_components.opencode_go.config_flow import (
 from custom_components.opencode_go.const import (
     CONF_API_KEY,
     CONF_MODEL,
+    CONF_NAME,
     CONF_PROMPT,
     DOMAIN,
     RECOMMENDED_AI_TASK_OPTIONS,
@@ -30,7 +32,7 @@ from custom_components.opencode_go.opencode_api import OpenCodeGoApiError
 
 
 @pytest.mark.asyncio
-async def test_user_step_creates_entry_on_valid_api_key(hass):
+async def test_user_step_moves_to_model_selection(hass):
     flow = OpenCodeGoConversationConfigFlow()
     flow.hass = hass
 
@@ -40,12 +42,35 @@ async def test_user_step_creates_entry_on_valid_api_key(hass):
     ):
         result = await flow.async_step_user({"api_key": "test_api_key"})
 
-    subentries = list(result["subentries"])
+    assert result["type"] == "form"
+    assert result["step_id"] == "models"
+
+
+@pytest.mark.asyncio
+async def test_models_step_creates_entry_with_selected_models(hass):
+    flow = OpenCodeGoConversationConfigFlow()
+    flow.hass = hass
+    flow._api_key = "test_api_key"
+
+    result = await flow.async_step_models(
+        {
+            "conversation_model": "opencode-go/gpt-6-luna",
+            "ai_task_model": "opencode-go/gemini-4-argon",
+        }
+    )
+
+    subentries = {sub["subentry_type"]: sub for sub in result["subentries"]}
 
     assert result["type"] == "create_entry"
     assert result["title"] == "OpenCode Go"
     assert result["data"]["api_key"] == "test_api_key"
-    assert len(subentries) == 2
+    assert subentries["conversation"]["data"][CONF_MODEL] == "opencode-go/gpt-6-luna"
+    assert subentries["conversation"]["data"][CONF_NAME] == "OpenCode Go"
+    assert subentries["conversation"]["title"] == "gpt-6-luna"
+    assert (
+        subentries["ai_task_data"]["data"][CONF_MODEL] == "opencode-go/gemini-4-argon"
+    )
+    assert subentries["ai_task_data"]["data"][CONF_NAME] == "OpenCode Go"
 
 
 @pytest.mark.asyncio
@@ -126,7 +151,7 @@ async def test_init_step_requires_a_model_without_preselecting_one(hass):
         patch.object(
             flow,
             "_get_entry",
-            return_value=SimpleNamespace(state=ConfigEntryState.LOADED),
+            return_value=SimpleNamespace(state=ConfigEntryState.LOADED, subentries={}),
         ),
         patch.object(
             flow,
@@ -153,7 +178,7 @@ async def _submit_recommended(flow, user_input):
         patch.object(
             flow,
             "_get_entry",
-            return_value=SimpleNamespace(state=ConfigEntryState.LOADED),
+            return_value=SimpleNamespace(state=ConfigEntryState.LOADED, subentries={}),
         ),
         patch.object(
             flow,
@@ -178,6 +203,7 @@ async def test_recommended_settings_keep_assist_when_untouched(hass):
 
     assert data[CONF_LLM_HASS_API] == [llm.LLM_API_ASSIST]
     assert data[CONF_PROMPT] == llm.DEFAULT_INSTRUCTIONS_PROMPT
+    assert data[CONF_NAME] == "OpenCode Go"
 
 
 @pytest.mark.asyncio
@@ -217,5 +243,34 @@ async def test_migrate_entry_shortens_subentry_titles(hass):
     entry.add_to_hass(hass)
 
     assert await async_migrate_entry(hass, entry)
-    assert entry.version == 2
-    assert next(iter(entry.subentries.values())).title == "deepseek-v4.1-flash"
+    assert entry.version == 3
+    subentry = next(iter(entry.subentries.values()))
+    assert subentry.title == "deepseek-v4.1-flash"
+    assert subentry.data[CONF_NAME] == "deepseek-v4.1-flash"
+
+
+def test_next_subentry_name_is_counted_per_domain(hass):
+    entry = SimpleNamespace(
+        state=ConfigEntryState.LOADED,
+        subentries={
+            "a": SimpleNamespace(
+                subentry_type="conversation", data={CONF_NAME: "OpenCode Go"}
+            ),
+            "b": SimpleNamespace(
+                subentry_type="conversation", data={CONF_NAME: "OpenCode Go 2"}
+            ),
+            "c": SimpleNamespace(
+                subentry_type="ai_task_data", data={CONF_NAME: "OpenCode Go"}
+            ),
+        },
+    )
+
+    conversation = OpenCodeGoConversationSubentryFlow()
+    conversation.hass = hass
+    ai_task = OpenCodeGoAITaskSubentryFlow()
+    ai_task.hass = hass
+
+    with patch.object(conversation, "_get_entry", return_value=entry):
+        assert conversation._next_subentry_name() == "OpenCode Go 3"
+    with patch.object(ai_task, "_get_entry", return_value=entry):
+        assert ai_task._next_subentry_name() == "OpenCode Go 2"

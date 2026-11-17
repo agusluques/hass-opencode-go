@@ -27,6 +27,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .const import (
     CONF_MODEL,
+    CONF_NAME,
     CONF_PROMPT,
     CONF_REASONING_EFFORT,
     CONF_REASONING_SUMMARY,
@@ -110,7 +111,7 @@ class OpenCodeGoConversationEntity(
         self._attr_unique_id = subentry.subentry_id
         self._attr_device_info = dr.DeviceInfo(
             identifiers={(DOMAIN, subentry.subentry_id)},
-            name=subentry.title,
+            name=self._options.get(CONF_NAME) or subentry.title,
             manufacturer="OpenCode",
             entry_type=dr.DeviceEntryType.SERVICE,
         )
@@ -123,6 +124,11 @@ class OpenCodeGoConversationEntity(
     @property
     def _options(self) -> Any:
         return self._subentry.data
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Expose the configured model without tying entity IDs to it."""
+        return {"model": self._options.get(CONF_MODEL)}
 
     @property
     def _model(self) -> str:

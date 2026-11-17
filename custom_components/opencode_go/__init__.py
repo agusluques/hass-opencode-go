@@ -10,7 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .const import CONF_API_KEY, CONF_MODEL, DOMAIN
+from .const import CONF_API_KEY, CONF_MODEL, CONF_NAME, DEFAULT_NAME, DOMAIN
 from .opencode_api import OpenCodeGoAuth, OpenCodeGoClient
 from .opencode_api.routing import MODEL_PREFIX
 
@@ -59,6 +59,20 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             if subentry.title != title:
                 hass.config_entries.async_update_subentry(entry, subentry, title=title)
         hass.config_entries.async_update_entry(entry, version=2)
+
+    if entry.version < 3:
+        for subentry in entry.subentries.values():
+            if subentry.data.get(CONF_NAME):
+                continue
+            hass.config_entries.async_update_subentry(
+                entry,
+                subentry,
+                data={
+                    **subentry.data,
+                    CONF_NAME: subentry.title or DEFAULT_NAME,
+                },
+            )
+        hass.config_entries.async_update_entry(entry, version=3)
     return True
 
 

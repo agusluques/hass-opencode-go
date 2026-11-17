@@ -26,13 +26,18 @@ from homeassistant.helpers.selector import (
 import voluptuous as vol
 
 from .const import (
+    CONF_AI_TASK_MODEL,
     CONF_API_KEY,
+    CONF_CONVERSATION_MODEL,
+    CONF_IMAGE_GENERATION,
     CONF_MODEL,
+    CONF_NAME,
     CONF_PROMPT,
     CONF_REASONING_EFFORT,
     CONF_REASONING_SUMMARY,
     CONF_RECOMMENDED,
     CONF_TEXT_VERBOSITY,
+    DEFAULT_NAME,
     DOMAIN,
     RECOMMENDED_AI_TASK_OPTIONS,
     RECOMMENDED_CONVERSATION_OPTIONS,
@@ -72,7 +77,11 @@ async def _async_fetch_models(hass, api_key: str) -> list[str]:
 class OpenCodeGoConversationConfigFlow(ConfigFlow, domain=DOMAIN):
     """Config flow: ask for API key, then configure subentries."""
 
-    VERSION = 2
+    VERSION = 3
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._api_key: str | None = None
 
     def _async_api_key_form(
         self, *, step_id: str, errors: dict[str, str] | None = None
@@ -105,26 +114,72 @@ class OpenCodeGoConversationConfigFlow(ConfigFlow, domain=DOMAIN):
                 _LOGGER.exception("Failed to validate OpenCode Go API key")
                 errors["base"] = "cannot_connect"
             else:
-                return self.async_create_entry(
-                    title="OpenCode Go",
-                    data={CONF_API_KEY: api_key},
-                    subentries=[
-                        {
-                            "subentry_type": "conversation",
-                            "data": RECOMMENDED_CONVERSATION_OPTIONS,
-                            "title": "OpenCode Go Conversation",
-                            "unique_id": None,
-                        },
-                        {
-                            "subentry_type": "ai_task_data",
-                            "data": RECOMMENDED_AI_TASK_OPTIONS,
-                            "title": "OpenCode Go AI Task",
-                            "unique_id": None,
-                        },
-                    ],
-                )
+                self._api_key = api_key
+                return await self.async_step_models()
 
         return self._async_api_key_form(step_id="user", errors=errors)
+
+    async def async_step_models(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Pick the first model for the conversation agent and the AI Task."""
+        if not self._api_key:
+            return await self.async_step_user()
+
+        if user_input is not None:
+            conversation_model = str(user_input[CONF_CONVERSATION_MODEL])
+            ai_task_model = str(user_input[CONF_AI_TASK_MODEL])
+            return self.async_create_entry(
+                title="OpenCode Go",
+                data={CONF_API_KEY: self._api_key},
+                subentries=[
+                    {
+                        "subentry_type": "conversation",
+                        "data": {
+                            **RECOMMENDED_CONVERSATION_OPTIONS,
+                            CONF_MODEL: conversation_model,
+                            CONF_NAME: DEFAULT_NAME,
+                        },
+                        "title": conversation_model.removeprefix("opencode-go/"),
+                        "unique_id": None,
+                    },
+                    {
+                        "subentry_type": "ai_task_data",
+                        "data": {
+                            **RECOMMENDED_AI_TASK_OPTIONS,
+                            CONF_MODEL: ai_task_model,
+                            CONF_NAME: DEFAULT_NAME,
+                        },
+                        "title": ai_task_model.removeprefix("opencode-go/"),
+                        "unique_id": None,
+                    },
+                ],
+            )
+
+        errors: dict[str, str] = {}
+        try:
+            models = await _async_fetch_models(self.hass, self._api_key)
+        except Exception:
+            _LOGGER.exception("Failed to fetch the OpenCode Go model catalog")
+            models = []
+            errors["base"] = "cannot_connect"
+        if not models and not errors:
+            errors["base"] = "no_models"
+
+        return self.async_show_form(
+            step_id="models",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_CONVERSATION_MODEL): SelectSelector(
+                        SelectSelectorConfig(options=list(models))
+                    ),
+                    vol.Required(CONF_AI_TASK_MODEL): SelectSelector(
+                        SelectSelectorConfig(options=list(models))
+                    ),
+                }
+            ),
+            errors=errors,
+        )
 
     async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
@@ -181,6 +236,33 @@ class _BaseOpenCodeGoSubentryFlow(ConfigSubentryFlow):
     def _supports_prompt_and_apis(self) -> bool:
         return False
 
+    @property
+    def _supports_image_generation_option(self) -> bool:
+        return False
+
+    SUBENTRY_TYPE = ""
+
+    def _next_subentry_name(self) -> str:
+        """Return the next default name for this subentry type.
+
+        Names are counted per entity domain (conversation vs AI Task), so a
+        conversation and an AI Task can both be called "OpenCode Go"; the
+        second AI Task becomes "OpenCode Go 2".
+        """
+        entry = self._get_entry()
+        used = {
+            subentry.data.get(CONF_NAME)
+            for subentry in entry.subentries.values()
+            if subentry.subentry_type == self.SUBENTRY_TYPE
+        }
+        used.discard(None)
+        if DEFAULT_NAME not in used:
+            return DEFAULT_NAME
+        index = 2
+        while f"{DEFAULT_NAME} {index}" in used:
+            index += 1
+        return f"{DEFAULT_NAME} {index}"
+
     async def _async_model_options(self) -> list[str]:
         api_key = self._get_entry().data[CONF_API_KEY]
         return await _async_fetch_models(self.hass, api_key)
@@ -210,6 +292,17 @@ class _BaseOpenCodeGoSubentryFlow(ConfigSubentryFlow):
             if user_input[CONF_RECOMMENDED]:
                 data = self._default_data.copy()
                 data[CONF_MODEL] = user_input[CONF_MODEL]
+                data[CONF_NAME] = (
+                    str(user_input.get(CONF_NAME) or "").strip()
+                    or self._next_subentry_name()
+                )
+                if self._supports_image_generation_option:
+                    data[CONF_IMAGE_GENERATION] = bool(
+                        user_input.get(
+                            CONF_IMAGE_GENERATION,
+                            self._default_data.get(CONF_IMAGE_GENERATION, True),
+                        )
+                    )
                 if self._supports_prompt_and_apis:
                     data[CONF_PROMPT] = (
                         user_input.get(CONF_PROMPT) or llm.DEFAULT_INSTRUCTIONS_PROMPT
@@ -248,7 +341,21 @@ class _BaseOpenCodeGoSubentryFlow(ConfigSubentryFlow):
             model_key: SelectSelector(
                 SelectSelectorConfig(options=list(model_options))
             ),
+            vol.Optional(
+                CONF_NAME,
+                description={
+                    "suggested_value": options.get(CONF_NAME)
+                    or self._next_subentry_name()
+                },
+            ): str,
         }
+        if self._supports_image_generation_option:
+            step_schema[
+                vol.Required(
+                    CONF_IMAGE_GENERATION,
+                    default=options.get(CONF_IMAGE_GENERATION, True),
+                )
+            ] = bool
         if self._supports_prompt_and_apis:
             hass_apis: list[SelectOptionDict] = [
                 {"value": api.id, "label": api.name}
@@ -334,10 +441,14 @@ class _BaseOpenCodeGoSubentryFlow(ConfigSubentryFlow):
 
     def _finalize_subentry(self, data: dict[str, Any]) -> SubentryFlowResult:
         model = data.get(CONF_MODEL) or ""
+        data[CONF_NAME] = (
+            str(data.get(CONF_NAME) or "").strip() or self._next_subentry_name()
+        )
         # The config entry title already says "OpenCode Go"; the subentry title
         # is only the model, so Home Assistant renders "<entry> <model>" without
-        # repeating the integration name.
-        title = model.removeprefix("opencode-go/") if model else "OpenCode Go"
+        # repeating the integration name. The device and entity IDs use
+        # CONF_NAME instead, so changing the model keeps them stable.
+        title = model.removeprefix("opencode-go/") if model else DEFAULT_NAME
 
         if self._is_new:
             return self.async_create_entry(title=title, data=data)
@@ -353,6 +464,8 @@ class _BaseOpenCodeGoSubentryFlow(ConfigSubentryFlow):
 class OpenCodeGoConversationSubentryFlow(_BaseOpenCodeGoSubentryFlow):
     """Flow for OpenCode Go conversation subentries."""
 
+    SUBENTRY_TYPE = "conversation"
+
     @property
     def _default_data(self) -> dict[str, Any]:
         return RECOMMENDED_CONVERSATION_OPTIONS
@@ -364,6 +477,12 @@ class OpenCodeGoConversationSubentryFlow(_BaseOpenCodeGoSubentryFlow):
 
 class OpenCodeGoAITaskSubentryFlow(_BaseOpenCodeGoSubentryFlow):
     """Flow for OpenCode Go AI task subentries."""
+
+    SUBENTRY_TYPE = "ai_task_data"
+
+    @property
+    def _supports_image_generation_option(self) -> bool:
+        return True
 
     @property
     def _default_data(self) -> dict[str, Any]:

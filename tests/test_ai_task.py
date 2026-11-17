@@ -125,6 +125,19 @@ def test_supported_features_include_image_generation_for_responses_models(
     assert ai_task_component.AITaskEntityFeature.GENERATE_IMAGE in features
     assert ai_task_component.AITaskEntityFeature.GENERATE_DATA in features
 
+    disabled = SimpleNamespace(
+        subentry_id="image_subentry_off",
+        title="gpt-5.6-luna",
+        data={"model": "opencode-go/gpt-5.6-luna", "image_generation": False},
+        subentry_type="ai_task_data",
+    )
+    disabled_entity = OpenCodeGoAITaskEntity(
+        hass, mock_config_entry, "test_api_key", cast(ConfigSubentry, disabled)
+    )
+    disabled_features = disabled_entity.supported_features
+    assert disabled_features is not None
+    assert ai_task_component.AITaskEntityFeature.GENERATE_IMAGE not in disabled_features
+
 
 @pytest.mark.asyncio
 async def test_generate_image_returns_decoded_png(mock_ai_task_entity):
