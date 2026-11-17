@@ -1,0 +1,210 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.14"
+# dependencies = ["pillow"]
+# ///
+"""Generate the OpenCode Go Conversation brand assets (icons and wordmark)."""
+
+from __future__ import annotations
+
+import math
+from pathlib import Path
+import tempfile
+import urllib.request
+
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
+
+ROOT = Path(__file__).resolve().parents[1]
+FONT_URL = (
+    "https://raw.githubusercontent.com/google/fonts/main/ofl/inter/"
+    "Inter%5Bopsz%2Cwght%5D.ttf"
+)
+FONT_CACHE = Path(tempfile.gettempdir()) / "opencode-go-inter-variable.ttf"
+
+
+def inter_font_path() -> Path:
+    """Return a local Inter variable font, downloading the OFL copy if needed."""
+    if not FONT_CACHE.exists():
+        print("Downloading Inter (OFL) from Google Fonts…")
+        urllib.request.urlretrieve(FONT_URL, FONT_CACHE)
+    return FONT_CACHE
+
+INK = (14, 17, 22, 255)
+INK_TOP = (10, 13, 17, 255)
+INK_BOTTOM = (20, 32, 40, 255)
+MINT = (61, 220, 151, 255)
+MINT_DARK = (16, 163, 110, 255)
+WHITE = (255, 255, 255, 255)
+WORD_DARK = (17, 24, 32, 255)
+
+
+def rounded_mask(size: int, radius: int) -> Image.Image:
+    mask = Image.new("L", (size, size), 0)
+    ImageDraw.Draw(mask).rounded_rectangle((0, 0, size - 1, size - 1), radius, fill=255)
+    return mask
+
+
+def vertical_gradient(size: int, top: tuple, bottom: tuple) -> Image.Image:
+    grad = Image.new("RGBA", (size, size))
+    draw = ImageDraw.Draw(grad)
+    for y in range(size):
+        t = y / (size - 1)
+        color = tuple(round(top[i] + (bottom[i] - top[i]) * t) for i in range(3))
+        draw.line((0, y, size, y), fill=(*color, 255))
+    return grad
+
+
+def glow(size: int, color: tuple, center: tuple[float, float], radius: float) -> Image.Image:
+    layer = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    pixels = layer.load()
+    cx, cy = center
+    for y in range(size):
+        dy = y - cy
+        for x in range(0, size, 1):
+            dx = x - cx
+            dist = math.hypot(dx, dy)
+            if dist >= radius:
+                continue
+            alpha = int(70 * (1 - dist / radius) ** 2)
+            pixels[x, y] = (*color, alpha)
+    return layer.filter(ImageFilter.GaussianBlur(size * 0.02))
+
+
+def icon(size: int = 2048) -> Image.Image:
+    base = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    body = vertical_gradient(size, INK_TOP, INK_BOTTOM)
+    body.alpha_composite(glow(size, (61, 220, 151), (size * 0.78, size * 0.82), size * 0.55))
+    base.paste(body, (0, 0), rounded_mask(size, int(size * 0.22)))
+
+    draw = ImageDraw.Draw(base)
+    border = max(2, size // 160)
+    draw.rounded_rectangle(
+        (border, border, size - border, size - border),
+        radius=int(size * 0.22),
+        outline=(34, 52, 63, 190),
+        width=border,
+    )
+
+    stroke = round(size * 0.075)
+    x0, y_center = size * 0.36, size * 0.5
+    tip_x, half = size * 0.55, size * 0.135
+    draw.line(
+        (x0, y_center - half, tip_x, y_center),
+        fill=MINT,
+        width=stroke,
+        joint="curve",
+    )
+    draw.line(
+        (tip_x, y_center, x0, y_center + half),
+        fill=MINT,
+        width=stroke,
+        joint="curve",
+    )
+    for x, y in ((x0, y_center - half), (tip_x, y_center), (x0, y_center + half)):
+        r = stroke / 2 - 1
+        draw.ellipse((x - r, y - r, x + r, y + r), fill=MINT)
+
+    cursor_x0 = size * 0.60
+    cursor_x1 = size * 0.76
+    cursor_y0 = y_center + size * 0.085
+    cursor_y1 = cursor_y0 + stroke * 0.9
+    draw.rounded_rectangle(
+        (cursor_x0, cursor_y0, cursor_x1, cursor_y1),
+        radius=stroke * 0.35,
+        fill=WHITE,
+    )
+    return base
+
+
+def mark(size: int) -> Image.Image:
+    """Transparent variant of the glyph for dark surfaces."""
+    base = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(base)
+    stroke = round(size * 0.085)
+    x0, y_center = size * 0.28, size * 0.48
+    tip_x, half = size * 0.52, size * 0.16
+    draw.line((x0, y_center - half, tip_x, y_center), fill=MINT, width=stroke, joint="curve")
+    draw.line((tip_x, y_center, x0, y_center + half), fill=MINT, width=stroke, joint="curve")
+    for x, y in ((x0, y_center - half), (tip_x, y_center), (x0, y_center + half)):
+        r = stroke / 2 - 1
+        draw.ellipse((x - r, y - r, x + r, y + r), fill=MINT)
+
+    draw.rounded_rectangle(
+        (size * 0.60, y_center + size * 0.10, size * 0.80, y_center + size * 0.20),
+        radius=stroke * 0.3,
+        fill=WHITE,
+    )
+    return base
+
+
+def wordmark(icon_source: Image.Image, text_color: tuple, accent: tuple) -> Image.Image:
+    height = 640
+    width = 2560
+    canvas = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+
+    mark_size = 420
+    badge = icon_source.resize((mark_size, mark_size), Image.LANCZOS)
+    canvas.alpha_composite(badge, (60, (height - mark_size) // 2))
+
+    draw = ImageDraw.Draw(canvas)
+
+    def draw_part(x: int, text: str, font: ImageFont.FreeTypeFont, fill: tuple) -> int:
+        bbox = draw.textbbox((0, 0), text, font=font)
+        part_width = bbox[2] - bbox[0]
+        part_height = bbox[3] - bbox[1]
+        y = height / 2 - (bbox[1] + part_height / 2)
+        draw.text((x - bbox[0], y), text, font=font, fill=fill)
+        return x + part_width
+
+    font_size = 176
+    font_path = str(inter_font_path())
+    brand_font = ImageFont.truetype(font_path, font_size)
+    brand_font.set_variation_by_axes([14, 620])
+    go_font = ImageFont.truetype(font_path, font_size)
+    go_font.set_variation_by_axes([14, 520])
+
+    x = 60 + mark_size + 68
+    x = draw_part(x, "OpenCode", brand_font, text_color)
+    x = draw_part(x + round(font_size * 0.26), "Go", go_font, accent)
+
+    bbox = canvas.getbbox()
+    assert bbox is not None
+    return canvas.crop((0, 0, min(width, bbox[2] + 44), height))
+
+
+def save(img: Image.Image, path: Path, size: tuple[int, int] | None = None) -> None:
+    out = img if size is None else img.resize(size, Image.LANCZOS)
+    out.save(path, optimize=True)
+    print(f"wrote {path.relative_to(ROOT)} ({out.width}x{out.height})")
+
+
+def main() -> None:
+    master = icon()
+    glyph = mark(1024)
+
+    save(master, ROOT / "icon.png", (256, 256))
+    save(master, ROOT / "icon@2x.png", (512, 512))
+    save(glyph, ROOT / "dark_icon.png", (256, 256))
+    save(glyph, ROOT / "dark_icon@2x.png", (512, 512))
+
+    light_logo = wordmark(master, WORD_DARK, MINT_DARK)
+    dark_logo = wordmark(master, WHITE, MINT)
+    save(light_logo, ROOT / "logo.png", (640, 160))
+    save(light_logo, ROOT / "logo@2x.png", (1280, 320))
+    save(dark_logo, ROOT / "dark_logo.png", (640, 160))
+    save(dark_logo, ROOT / "dark_logo@2x.png", (1280, 320))
+
+    brand = ROOT / "custom_components/opencode_go_conversation/brand"
+    brand.mkdir(parents=True, exist_ok=True)
+    save(master, brand / "icon.png", (256, 256))
+    save(master, brand / "icon@2x.png", (512, 512))
+    save(glyph, brand / "dark_icon.png", (256, 256))
+    save(glyph, brand / "dark_icon@2x.png", (512, 512))
+    save(light_logo, brand / "logo.png", (640, 160))
+    save(light_logo, brand / "logo@2x.png", (1280, 320))
+    save(dark_logo, brand / "dark_logo.png", (640, 160))
+    save(dark_logo, brand / "dark_logo@2x.png", (1280, 320))
+
+
+if __name__ == "__main__":
+    main()
