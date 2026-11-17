@@ -88,9 +88,7 @@ async def sse_iter(resp: aiohttp.ClientResponse) -> AsyncIterator[ResponseEvent]
         try:
             evt: dict[str, Any] = json.loads(data_str)
         except json.JSONDecodeError:
-            _LOGGER.debug(
-                "opencode_api.sse: unparseable data payload: %.120s", data_str
-            )
+            _LOGGER.debug("opencode_api.sse: unparsable data payload: %.120s", data_str)
             continue
 
         if isinstance(evt.get("error"), dict):
@@ -163,7 +161,7 @@ async def responses_sse_iter(
             evt: dict[str, Any] = json.loads(data_str)
         except json.JSONDecodeError:
             _LOGGER.debug(
-                "opencode_api.sse: unparseable Responses payload: %.120s", data_str
+                "opencode_api.sse: unparsable Responses payload: %.120s", data_str
             )
             continue
 
@@ -237,7 +235,7 @@ async def anthropic_sse_iter(
             evt: dict[str, Any] = json.loads(data_str)
         except json.JSONDecodeError:
             _LOGGER.debug(
-                "opencode_api.sse: unparseable Anthropic payload: %.120s", data_str
+                "opencode_api.sse: unparsable Anthropic payload: %.120s", data_str
             )
             continue
 

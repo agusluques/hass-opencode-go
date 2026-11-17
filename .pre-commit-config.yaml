@@ -1,15 +1,19 @@
+# See https://pre-commit.com for hooks and usage.
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: check-added-large-files
-      # - id: check-json
+      - id: check-json
+        exclude: ^\.devcontainer/devcontainer\.json$
+      - id: check-merge-conflict
+      - id: check-toml
       - id: check-yaml
       - id: end-of-file-fixer
       - id: trailing-whitespace
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.11.13
+    rev: v0.16.0
     hooks:
       - id: ruff
         args: [--fix]
@@ -20,11 +24,6 @@ repos:
     hooks:
       - id: codespell
         args:
-          - --ignore-words-list=converation,hass
-          - --skip=custom_components/*/translations/*.json
-
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v4.0.0-alpha.8
-    hooks:
-      - id: prettier
-        files: \.(json|md|ya?ml)$
+          - --ignore-words-list=aiport,astroid,checkin,currenty,hass,iif,incomfort,lookin,nam,NotIn
+          - --skip=./.*,*.csv,*.json,*.ambr,uv.lock
+        exclude: ^custom_components/.*/translations/.*\.json$

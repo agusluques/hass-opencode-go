@@ -111,25 +111,7 @@
         "[jsontranslation]": {
           "editor.defaultFormatter": "esbenp.prettier-vscode",
           "editor.formatOnSave": false
-        },
-        "json.schemas": [
-          {
-            "fileMatch": ["custom_components/*/manifest.json"],
-            "url": "${containerWorkspaceFolder}/schemas/json/manifest_schema.json"
-          },
-          {
-            "fileMatch": ["custom_components/*/translations/*.json"],
-            "url": "${containerWorkspaceFolder}/schemas/json/translation_schema.json"
-          },
-          {
-            "fileMatch": ["hacs.json"],
-            "url": "${containerWorkspaceFolder}/schemas/json/hacs_schema.json"
-          },
-          {
-            "fileMatch": ["custom_components/*/icons.json"],
-            "url": "${containerWorkspaceFolder}/schemas/json/icons_schema.json"
-          }
-        ]
+        }
       }
     }
   },

@@ -2,7 +2,7 @@
 
 # script/check: Run linting and type checking tools together
 #
-# Runs type-check (Pyright), lint-check (Ruff), and spell-check (codespell) in sequence.
+# Runs type-check (ty), lint-check (Ruff), and spell-check (codespell) in sequence.
 # Recommended before committing changes.
 #
 # Usage:
@@ -25,7 +25,7 @@ echo ""
 echo ""
 "$SCRIPT_DIR/spell-check"
 
-# Run hassfest validation if it has been set up (only in local environment, not CI)
+# Run hassfest validation when HA Core is available locally
 if [ -z "${CI:-}" ] && [ -z "${GITHUB_ACTIONS:-}" ] && [ -d "$SCRIPT_DIR/../.local/ha-core" ]; then
     echo ""
     "$SCRIPT_DIR/hassfest"
