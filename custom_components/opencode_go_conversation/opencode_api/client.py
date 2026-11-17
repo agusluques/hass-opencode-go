@@ -16,7 +16,12 @@ from .errors import (
     OpenCodeGoServerOverloaded,
 )
 from .models import ResponseEvent
-from .payloads import to_anthropic_body, to_chat_body, to_responses_body
+from .payloads import (
+    to_anthropic_body,
+    to_chat_body,
+    to_google_body,
+    to_responses_body,
+)
 from .requests import OpenCodeGoRequest
 from .routing import (
     MODEL_CATALOG,
@@ -26,7 +31,12 @@ from .routing import (
     normalize_model_id,
     resolve_model_route,
 )
-from .sse import anthropic_sse_iter, responses_sse_iter, sse_iter
+from .sse import (
+    anthropic_sse_iter,
+    google_sse_iter,
+    responses_sse_iter,
+    sse_iter,
+)
 
 RESPONSES_PATH = "/responses"
 CHAT_COMPLETIONS_PATH = "/chat/completions"
@@ -83,6 +93,71 @@ class OpenCodeGoClient:
             return resolve_model_route(model)
         return route
 
+    async def async_generate_image(
+        self,
+        *,
+        model: str,
+        instructions: str,
+        session_id: str,
+    ) -> str:
+        """Generate an image and return its base64 payload.
+
+        Image results are megabytes of base64 in a single field, which exceeds
+        aiohttp's SSE line limit, so this call is intentionally not streamed.
+        """
+        if not session_id:
+            raise OpenCodeGoError(
+                "OpenCode Go image generation requires a stable session_id"
+            )
+        route = await self._async_route(model)
+        if route.protocol != "responses":
+            raise OpenCodeGoError(
+                "The selected model cannot generate images; pick a Responses "
+                "model such as gpt-6-luna or grok-4.7"
+            )
+
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "x-opencode-session": session_id,
+        }
+        body = {
+            "model": normalize_model_id(model),
+            "input": [
+                {
+                    "type": "message",
+                    "role": "user",
+                    "content": [{"type": "input_text", "text": instructions}],
+                }
+            ],
+            "tools": [{"type": "image_generation"}],
+            "stream": False,
+        }
+        path = route.path
+        resp = await self._auth.request(
+            "post",
+            path,
+            headers=headers,
+            json=body,
+            base_url=route.base_url,
+        )
+        try:
+            await self._raise_for_status(resp)
+            payload = await resp.json()
+        finally:
+            resp.release()
+
+        output = payload.get("output") if isinstance(payload, dict) else None
+        for item in output if isinstance(output, list) else []:
+            if (
+                isinstance(item, dict)
+                and item.get("type") == "image_generation_call"
+                and isinstance(item.get("result"), str)
+                and item["result"]
+            ):
+                return item["result"]
+        raise OpenCodeGoError("OpenCode Go did not return a generated image")
+
     async def _raise_for_status(self, resp: aiohttp.ClientResponse) -> None:
         """Translate an unsuccessful HTTP response into a typed error."""
         if resp.status == 401:
@@ -123,18 +198,23 @@ class OpenCodeGoClient:
             headers["x-api-key"] = await self._auth.async_get_api_key()
             headers["anthropic-version"] = "2023-06-01"
 
+        path = route.path
         if route.protocol == "responses":
             body = to_responses_body(request)
         elif route.protocol == "anthropic":
             body = to_anthropic_body(request)
+        elif route.protocol == "google":
+            path = route.path.format(model=normalize_model_id(request.model))
+            body = to_google_body(request)
         else:
             body = to_chat_body(request)
 
         resp = await self._auth.request(
             "post",
-            route.path,
+            path,
             headers=headers,
             json=body,
+            base_url=route.base_url,
         )
         try:
             await self._raise_for_status(resp)
@@ -143,6 +223,8 @@ class OpenCodeGoClient:
                 event_stream = responses_sse_iter(resp)
             elif route.protocol == "anthropic":
                 event_stream = anthropic_sse_iter(resp)
+            elif route.protocol == "google":
+                event_stream = google_sse_iter(resp)
             else:
                 event_stream = sse_iter(resp)
             async for event in event_stream:

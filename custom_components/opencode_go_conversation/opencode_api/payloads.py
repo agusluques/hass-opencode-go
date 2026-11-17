@@ -323,3 +323,176 @@ def to_anthropic_body(request: OpenCodeGoRequest) -> dict[str, Any]:
     if request.reasoning_effort:
         body["output_config"] = {"effort": request.reasoning_effort}
     return body
+
+
+def _google_inline_part(value: Any) -> dict[str, Any] | None:
+    """Return a Google ``inlineData``/``fileData`` part for *value*."""
+    url = _as_data_url(value)
+    if not url:
+        return None
+    match = _DATA_URL_RE.match(url)
+    if match:
+        return {
+            "inlineData": {
+                "mimeType": match.group("media_type"),
+                "data": match.group("data"),
+            }
+        }
+    return {"fileData": {"fileUri": url}}
+
+
+def _google_parts(content: Any) -> list[dict[str, Any]]:
+    """Convert our input content parts to Google ``parts``."""
+    if isinstance(content, str):
+        return [{"text": content}] if content else []
+    if not isinstance(content, list):
+        return []
+
+    parts: list[dict[str, Any]] = []
+    for raw_part in content:
+        if not isinstance(raw_part, dict):
+            continue
+        part_type = raw_part.get("type")
+        if part_type in ("text", "input_text") and isinstance(
+            raw_part.get("text"), str
+        ):
+            if raw_part["text"]:
+                parts.append({"text": raw_part["text"]})
+            continue
+        if part_type == "input_image":
+            part = _google_inline_part(raw_part.get("image_url"))
+            if part:
+                parts.append(part)
+            continue
+        if part_type == "input_file":
+            part = _google_inline_part(
+                raw_part.get("file_data")
+            ) or _google_inline_part(raw_part.get("image_url"))
+            if part:
+                parts.append(part)
+    return parts
+
+
+def _append_google_content(
+    contents: list[dict[str, Any]], role: str, parts: list[dict[str, Any]]
+) -> None:
+    """Append *parts* as *role*, merging with the previous turn when possible."""
+    if not parts:
+        return
+    if contents and contents[-1]["role"] == role:
+        contents[-1]["parts"].extend(parts)
+        return
+    contents.append({"role": role, "parts": parts})
+
+
+def _google_function_response(output: Any) -> dict[str, Any]:
+    """Wrap a tool result the way Google's ``functionResponse`` expects it."""
+    if isinstance(output, str):
+        try:
+            output = json.loads(output)
+        except json.JSONDecodeError:
+            pass
+    return {"result": output}
+
+
+def _messages_to_google(
+    request: OpenCodeGoRequest,
+) -> tuple[str, list[dict[str, Any]]]:
+    system_parts: list[str] = []
+    contents: list[dict[str, Any]] = []
+    call_names: dict[str, str] = {}
+
+    for raw_message in request.messages:
+        if not isinstance(raw_message, dict):
+            continue
+        role = raw_message.get("role")
+        content = raw_message.get("content")
+
+        if role == "system":
+            if isinstance(content, str) and content:
+                system_parts.append(content)
+            continue
+
+        if role == "user":
+            _append_google_content(contents, "user", _google_parts(content))
+            continue
+
+        if role == "assistant":
+            parts = _google_parts(content)
+            for raw_call in raw_message.get("tool_calls") or []:
+                if not isinstance(raw_call, dict):
+                    continue
+                function = raw_call.get("function") or {}
+                if not isinstance(function, dict):
+                    continue
+                name = function.get("name")
+                if not isinstance(name, str) or not name:
+                    continue
+                arguments = function.get("arguments", {})
+                if isinstance(arguments, str):
+                    try:
+                        arguments = json.loads(arguments)
+                    except json.JSONDecodeError:
+                        arguments = {"value": arguments}
+                if not isinstance(arguments, dict):
+                    arguments = {"value": arguments}
+                parts.append({"functionCall": {"name": name, "args": arguments}})
+                call_id = raw_call.get("id")
+                if isinstance(call_id, str) and call_id:
+                    call_names[call_id] = name
+            _append_google_content(contents, "model", parts)
+            continue
+
+        if role == "tool":
+            call_id = raw_message.get("tool_call_id")
+            name = call_names.get(call_id if isinstance(call_id, str) else "", "")
+            if not name:
+                continue
+            _append_google_content(
+                contents,
+                "user",
+                [
+                    {
+                        "functionResponse": {
+                            "name": name,
+                            "response": _google_function_response(
+                                raw_message.get("content", "")
+                            ),
+                        }
+                    }
+                ],
+            )
+
+    return "\n\n".join(system_parts), contents
+
+
+def to_google_body(request: OpenCodeGoRequest) -> dict[str, Any]:
+    """Serialise a request for Google's ``streamGenerateContent`` endpoint."""
+    system, contents = _messages_to_google(request)
+    if request.instructions and request.instructions not in system:
+        system = "\n\n".join(part for part in (system, request.instructions) if part)
+
+    generation_config: dict[str, Any] = {"maxOutputTokens": 32_000}
+    body: dict[str, Any] = {
+        "contents": contents,
+        "generationConfig": generation_config,
+    }
+    if system:
+        body["systemInstruction"] = {"parts": [{"text": system}]}
+
+    declarations = [
+        {
+            "name": tool.get("name", ""),
+            "description": tool.get("description", ""),
+            "parameters": tool.get("parameters", {}),
+        }
+        for tool in request.tools
+        if isinstance(tool, dict) and tool.get("type") == "function"
+    ]
+    if declarations:
+        body["tools"] = [{"functionDeclarations": declarations}]
+    if request.reasoning_effort:
+        generation_config["thinkingConfig"] = {
+            "thinkingLevel": request.reasoning_effort
+        }
+    return body

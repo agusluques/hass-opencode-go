@@ -48,6 +48,12 @@ def model_catalog():
             "gpt-5.6-luna": ModelRoute("gpt-5.6-luna", "responses", "/responses"),
             "qwen3.8-max": ModelRoute("qwen3.8-max", "anthropic", "/messages"),
             "kimi-k3": ModelRoute("kimi-k3", "chat", "/chat/completions"),
+            "gemini-4-argon": ModelRoute(
+                "gemini-4-argon",
+                "google",
+                "/models/{model}:streamGenerateContent?alt=sse",
+                "https://opencode.ai/inference/go/google/v1beta",
+            ),
         }
     )
     yield

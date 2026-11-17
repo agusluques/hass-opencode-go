@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import base64
+from types import SimpleNamespace
 from typing import cast
 from unittest.mock import MagicMock, patch
 
@@ -103,3 +105,59 @@ def test_format_structure_instruction():
     assert "Return only valid JSON." in instruction
     assert "name" in instruction
     assert "age" in instruction
+
+
+def test_supported_features_include_image_generation_for_responses_models(
+    hass, mock_config_entry, mock_ai_task_subentry
+):
+    subentry = SimpleNamespace(
+        subentry_id="image_subentry",
+        title="gpt-5.6-luna",
+        data={"model": "opencode-go/gpt-5.6-luna"},
+        subentry_type="ai_task_data",
+    )
+    entity = OpenCodeGoAITaskEntity(
+        hass, mock_config_entry, "test_api_key", cast(ConfigSubentry, subentry)
+    )
+
+    features = entity.supported_features
+    assert features is not None
+    assert ai_task_component.AITaskEntityFeature.GENERATE_IMAGE in features
+    assert ai_task_component.AITaskEntityFeature.GENERATE_DATA in features
+
+
+@pytest.mark.asyncio
+async def test_generate_image_returns_decoded_png(mock_ai_task_entity):
+    png = (
+        b"\x89PNG\r\n\x1a\n"
+        + b"\x00" * 8
+        + (2).to_bytes(4, "big")
+        + (3).to_bytes(4, "big")
+    )
+
+    class FakeClient:
+        def __init__(self, *_args: object) -> None:
+            pass
+
+        async def async_generate_image(
+            self, *, model: str, instructions: str, session_id: str
+        ) -> str:
+            assert model == "opencode-go/deepseek-v4.1-flash"
+            assert instructions == "Draw an apple"
+            assert session_id == "conv-test"
+            return base64.b64encode(png).decode()
+
+    task = ai_task_component.GenImageTask(name="apple", instructions="Draw an apple")
+    chat_log = make_chat_log([])
+
+    with patch(
+        "custom_components.opencode_go_conversation.ai_task.OpenCodeGoClient",
+        FakeClient,
+    ):
+        result = await mock_ai_task_entity._async_generate_image(task, chat_log)
+
+    assert result.image_data == png
+    assert result.width == 2
+    assert result.height == 3
+    assert result.mime_type == "image/png"
+    assert result.conversation_id == "conv-test"

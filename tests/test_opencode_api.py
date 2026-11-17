@@ -17,15 +17,19 @@ from custom_components.opencode_go_conversation.opencode_api import (
     OpenCodeGoRequest,
 )
 from custom_components.opencode_go_conversation.opencode_api.models import (
+    FunctionCallAdded,
     FunctionCallArgumentsDone,
     OutputTextDelta,
+    ResponseCompleted,
 )
 from custom_components.opencode_go_conversation.opencode_api.routing import (
     MODEL_CATALOG,
     ModelRoute,
+    supports_image_generation,
 )
 from custom_components.opencode_go_conversation.opencode_api.sse import (
     anthropic_sse_iter,
+    google_sse_iter,
     responses_sse_iter,
 )
 
@@ -104,6 +108,7 @@ class _FakeAuth:
         self.headers: dict[str, str] | None = None
         self.path: str | None = None
         self.body: dict[str, Any] | None = None
+        self.base_url: str | None = None
 
     async def async_get_api_key(self) -> str:
         return "test-api-key"
@@ -112,6 +117,7 @@ class _FakeAuth:
         self.headers = cast(dict[str, str], kwargs["headers"])
         self.path = path
         self.body = cast(dict[str, Any], kwargs.get("json"))
+        self.base_url = cast(str | None, kwargs.get("base_url"))
         return _FakeResponse()
 
 
@@ -176,6 +182,11 @@ async def test_stream_rejects_models_missing_from_the_catalog() -> None:
         ("opencode-go/gpt-5.6-luna", "/responses", "responses"),
         ("opencode-go/deepseek-v4.1-flash", "/chat/completions", "chat"),
         ("opencode-go/qwen3.8-max", "/messages", "anthropic"),
+        (
+            "opencode-go/gemini-4-argon",
+            "/models/gemini-4-argon:streamGenerateContent?alt=sse",
+            "google",
+        ),
     ],
 )
 async def test_stream_routes_model_to_documented_protocol(
@@ -204,7 +215,8 @@ async def test_stream_routes_model_to_documented_protocol(
 
     assert auth.path == path
     assert auth.body is not None
-    assert auth.body["model"] == model.removeprefix("opencode-go/")
+    if protocol != "google":
+        assert auth.body["model"] == model.removeprefix("opencode-go/")
     assert auth.headers is not None
     assert auth.headers["x-opencode-session"] == "conversation-1"
     if protocol == "anthropic":
@@ -215,6 +227,10 @@ async def test_stream_routes_model_to_documented_protocol(
     elif protocol == "responses":
         assert auth.body["input"] == request.input_items
         assert auth.body["instructions"] == "Be concise."
+    elif protocol == "google":
+        assert auth.base_url == "https://opencode.ai/inference/go/google/v1beta"
+        assert auth.body["systemInstruction"]["parts"][0]["text"] == "Be concise."
+        assert auth.body["contents"][0]["parts"][0]["text"] == "Hello"
     else:
         assert auth.body["messages"][0]["role"] == "system"
 
@@ -247,7 +263,14 @@ CATALOG_PAYLOAD: dict[str, Any] = {
         {"id": "deepseek-v4.1-flash", "api": {"chat-completions": {}}},
         {"id": "gpt-6-luna", "api": {"responses": {}}},
         {"id": "qwen4-max", "api": {"messages": {}}},
-        {"id": "gemini-4-argon", "api": {"generate-content": {}}},
+        {
+            "id": "gemini-4-argon",
+            "api": {
+                "generate-content": {
+                    "base_url": "https://opencode.ai/inference/go/google/v1beta"
+                }
+            },
+        },
         {"id": "no-api-metadata"},
     ]
 }
@@ -264,10 +287,15 @@ async def test_list_models_returns_the_live_catalog_routes() -> None:
         "opencode-go/deepseek-v4.1-flash",
         "opencode-go/gpt-6-luna",
         "opencode-go/qwen4-max",
+        "opencode-go/gemini-4-argon",
     ]
     assert MODEL_CATALOG.get("gpt-6-luna") == ModelRoute(
         "gpt-6-luna", "responses", "/responses"
     )
+    gemini = MODEL_CATALOG.get("gemini-4-argon")
+    assert gemini is not None
+    assert gemini.protocol == "google"
+    assert gemini.base_url == "https://opencode.ai/inference/go/google/v1beta"
 
 
 @pytest.mark.asyncio
@@ -332,6 +360,104 @@ async def test_stream_reports_models_dropped_from_the_plan() -> None:
         ]
 
     assert MODEL_CATALOG.is_fresh is False
+
+
+def test_image_generation_is_only_advertised_for_responses_models() -> None:
+    assert supports_image_generation("opencode-go/gpt-5.6-luna") is True
+    assert supports_image_generation("opencode-go/deepseek-v4.1-flash") is False
+    assert supports_image_generation("opencode-go/gemini-4-argon") is False
+    assert supports_image_generation("opencode-go/unknown-model") is False
+
+
+@pytest.mark.asyncio
+async def test_google_sse_translates_text_and_function_calls() -> None:
+    response = cast(
+        aiohttp.ClientResponse,
+        type(
+            "Response",
+            (),
+            {
+                "content": _LinesContent(
+                    "\n".join(
+                        [
+                            'data: {"candidates":[{"content":{"role":"model","parts":[{"text":"Hi"}]}}]}',
+                            "",
+                            'data: {"candidates":[{"content":{"parts":[{"functionCall":{"id":"call_1","name":"turn_on","args":{"entity_id":"light.x"}}}]},"finishReason":"STOP"}],"usageMetadata":{"totalTokenCount":10}}',
+                            "",
+                        ]
+                    )
+                )
+            },
+        )(),
+    )
+
+    events = [event async for event in google_sse_iter(response)]
+
+    assert OutputTextDelta(delta="Hi") in events
+    assert (
+        FunctionCallAdded(call_id="call_1", name="turn_on", item_id="call_1") in events
+    )
+    assert (
+        FunctionCallArgumentsDone(
+            arguments='{"entity_id": "light.x"}', item_id="call_1"
+        )
+        in events
+    )
+    assert ResponseCompleted(usage={"totalTokenCount": 10}) in events
+
+
+@pytest.mark.asyncio
+async def test_generate_image_posts_a_non_streaming_responses_request() -> None:
+    encoded = "aW1hZ2U="
+
+    class ImageResponse(_FakeResponse):
+        async def json(self) -> dict[str, Any]:
+            return {
+                "output": [
+                    {"type": "image_generation_call", "result": encoded},
+                ]
+            }
+
+    class ImageAuth(_FakeAuth):
+        async def request(
+            self, method: str, path: str, **kwargs: object
+        ) -> ImageResponse:
+            self.method = method
+            self.headers = cast(dict[str, str], kwargs["headers"])
+            self.path = path
+            self.body = cast(dict[str, Any], kwargs.get("json"))
+            self.base_url = cast(str | None, kwargs.get("base_url"))
+            return ImageResponse()
+
+    auth = ImageAuth()
+    client = OpenCodeGoClient(cast(AbstractAuth, auth))
+
+    result = await client.async_generate_image(
+        model="opencode-go/gpt-5.6-luna",
+        instructions="Draw a cat",
+        session_id="conversation-1",
+    )
+
+    assert result == encoded
+    assert auth.path == "/responses"
+    assert auth.body is not None
+    assert auth.body["stream"] is False
+    assert auth.body["tools"] == [{"type": "image_generation"}]
+    assert auth.body["input"][0]["content"][0]["text"] == "Draw a cat"
+    assert auth.headers is not None
+    assert auth.headers["x-opencode-session"] == "conversation-1"
+
+
+@pytest.mark.asyncio
+async def test_generate_image_rejects_non_responses_models() -> None:
+    client = OpenCodeGoClient(cast(AbstractAuth, _FakeAuth()))
+
+    with pytest.raises(OpenCodeGoError, match="cannot generate images"):
+        await client.async_generate_image(
+            model="opencode-go/deepseek-v4.1-flash",
+            instructions="Draw a cat",
+            session_id="conversation-1",
+        )
 
 
 @pytest.mark.asyncio

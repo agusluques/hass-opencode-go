@@ -27,9 +27,19 @@ class AbstractAuth(ABC):
         """Return the current API key."""
 
     async def request(
-        self, method: str, path: str, **kwargs: object
+        self,
+        method: str,
+        path: str,
+        *,
+        base_url: str | None = None,
+        **kwargs: object,
     ) -> aiohttp.ClientResponse:
-        """Make an authenticated request to the OpenCode Go API."""
+        """Make an authenticated request to the OpenCode Go API.
+
+        ``base_url`` overrides the default endpoint, which Google-protocol
+        models need because the catalog publishes a different base URL for
+        them.
+        """
         request_kwargs = cast(dict[str, Any], kwargs)
         raw_headers = cast(dict[str, str] | None, request_kwargs.pop("headers", None))
         headers = dict(raw_headers or {})
@@ -40,7 +50,7 @@ class AbstractAuth(ABC):
         headers["User-Agent"] = OPENCODE_GO_USER_AGENT
         return await self._session.request(
             method,
-            f"{self._base_url}{path}",
+            f"{base_url or self._base_url}{path}",
             headers=headers,
             **request_kwargs,
         )

@@ -6,16 +6,23 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 from homeassistant.config_entries import SOURCE_RECONFIGURE, ConfigEntryState
+from homeassistant.const import CONF_LLM_HASS_API
+from homeassistant.helpers import llm
 import pytest
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 import voluptuous as vol
 
+from custom_components.opencode_go_conversation import async_migrate_entry
 from custom_components.opencode_go_conversation.config_flow import (
     OpenCodeGoConversationConfigFlow,
     OpenCodeGoConversationSubentryFlow,
     _async_fetch_models,
 )
 from custom_components.opencode_go_conversation.const import (
+    CONF_API_KEY,
     CONF_MODEL,
+    CONF_PROMPT,
+    DOMAIN,
     RECOMMENDED_AI_TASK_OPTIONS,
     RECOMMENDED_CONVERSATION_OPTIONS,
 )
@@ -143,3 +150,76 @@ async def test_init_step_requires_a_model_without_preselecting_one(hass):
 def test_recommended_options_do_not_pin_a_model():
     assert CONF_MODEL not in RECOMMENDED_CONVERSATION_OPTIONS
     assert CONF_MODEL not in RECOMMENDED_AI_TASK_OPTIONS
+
+
+async def _submit_recommended(flow, user_input):
+    with (
+        patch.object(
+            flow,
+            "_get_entry",
+            return_value=SimpleNamespace(state=ConfigEntryState.LOADED),
+        ),
+        patch.object(
+            flow,
+            "_finalize_subentry",
+            return_value={"type": "create_entry"},
+        ) as finalize,
+    ):
+        await flow.async_step_init(user_input)
+    return finalize.call_args.args[0]
+
+
+@pytest.mark.asyncio
+async def test_recommended_settings_keep_assist_when_untouched(hass):
+    flow = OpenCodeGoConversationSubentryFlow()
+    flow.hass = hass
+    flow.options = {}
+    flow._init_data = {}
+
+    data = await _submit_recommended(
+        flow, {"model": "opencode-go/deepseek-v4.1-flash", "recommended": True}
+    )
+
+    assert data[CONF_LLM_HASS_API] == [llm.LLM_API_ASSIST]
+    assert data[CONF_PROMPT] == llm.DEFAULT_INSTRUCTIONS_PROMPT
+
+
+@pytest.mark.asyncio
+async def test_recommended_settings_can_disable_assist(hass):
+    flow = OpenCodeGoConversationSubentryFlow()
+    flow.hass = hass
+    flow.options = {}
+    flow._init_data = {}
+
+    data = await _submit_recommended(
+        flow,
+        {
+            "model": "opencode-go/deepseek-v4.1-flash",
+            "recommended": True,
+            CONF_LLM_HASS_API: [],
+        },
+    )
+
+    assert data[CONF_LLM_HASS_API] == []
+
+
+@pytest.mark.asyncio
+async def test_migrate_entry_shortens_subentry_titles(hass):
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        version=1,
+        data={CONF_API_KEY: "test_api_key"},
+        subentries_data=[
+            {
+                "data": {CONF_MODEL: "opencode-go/deepseek-v4.1-flash"},
+                "subentry_type": "conversation",
+                "title": "OpenCode Go (deepseek-v4.1-flash)",
+                "unique_id": None,
+            }
+        ],
+    )
+    entry.add_to_hass(hass)
+
+    assert await async_migrate_entry(hass, entry)
+    assert entry.version == 2
+    assert next(iter(entry.subentries.values())).title == "deepseek-v4.1-flash"

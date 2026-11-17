@@ -93,7 +93,7 @@ class OpenCodeGoConversationEntity(
     """Conversation agent backed by OpenCode Go."""
 
     _attr_has_entity_name = True
-    _attr_name = "Assist"
+    _attr_name = None
     _attr_supports_streaming = True
 
     def __init__(
@@ -108,12 +108,10 @@ class OpenCodeGoConversationEntity(
         self._subentry = subentry
         self._api_key = api_key
         self._attr_unique_id = subentry.subentry_id
-        self._attr_name = subentry.title
         self._attr_device_info = dr.DeviceInfo(
             identifiers={(DOMAIN, subentry.subentry_id)},
             name=subentry.title,
             manufacturer="OpenCode",
-            model=self._options.get(CONF_MODEL) or "Not configured",
             entry_type=dr.DeviceEntryType.SERVICE,
         )
 

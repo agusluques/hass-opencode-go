@@ -10,19 +10,22 @@ from .errors import OpenCodeGoError, OpenCodeGoModelNotInGo
 
 MODEL_PREFIX = "opencode-go/"
 
-ModelProtocol = Literal["responses", "chat", "anthropic"]
+ModelProtocol = Literal["responses", "chat", "anthropic", "google"]
 
 # How long a fetched catalog is reused before asking the API again.
 CATALOG_TTL = 3600.0
 
 # ``api`` keys published by ``GET /models`` mapped to the wire contract this
-# client can serialise.  The catalog also publishes ``generate-content``
-# (Google's protocol); models that only expose it are hidden from the picker
-# until the client supports that endpoint.
+# client can serialise.  ``generate-content`` is Google's protocol: it uses its
+# own base URL (published per model) and a path that includes the model name.
 _API_ROUTES: dict[str, tuple[ModelProtocol, str]] = {
     "chat-completions": ("chat", "/chat/completions"),
     "responses": ("responses", "/responses"),
     "messages": ("anthropic", "/messages"),
+    "generate-content": (
+        "google",
+        "/models/{model}:streamGenerateContent?alt=sse",
+    ),
 }
 
 
@@ -33,6 +36,7 @@ class ModelRoute:
     model_id: str
     protocol: ModelProtocol
     path: str
+    base_url: str | None = None
 
 
 class ModelCatalog:
@@ -112,8 +116,16 @@ def route_from_catalog_entry(entry: Any) -> ModelRoute | None:
         return None
 
     for api_name, (protocol, path) in _API_ROUTES.items():
-        if api_name in api:
-            return ModelRoute(model_id.strip(), protocol, path)
+        config = api.get(api_name)
+        if config is None:
+            continue
+        base_url = config.get("base_url") if isinstance(config, dict) else None
+        return ModelRoute(
+            model_id.strip(),
+            protocol,
+            path,
+            base_url if isinstance(base_url, str) and base_url else None,
+        )
 
     return None
 
@@ -129,6 +141,19 @@ def normalize_model_id(model: str) -> str:
     if not model_id:
         raise OpenCodeGoError("OpenCode Go model ID must not be empty")
     return model_id
+
+
+def supports_image_generation(model: str) -> bool:
+    """Return True when the model's protocol exposes the image_generation tool.
+
+    OpenCode Go only generates images through the Responses endpoint; chat,
+    Anthropic and Google models are text-only.
+    """
+    try:
+        route = MODEL_CATALOG.get(normalize_model_id(model))
+    except OpenCodeGoError:
+        return False
+    return route is not None and route.protocol == "responses"
 
 
 def resolve_model_route(model: str) -> ModelRoute:

@@ -72,7 +72,7 @@ async def _async_fetch_models(hass, api_key: str) -> list[str]:
 class OpenCodeGoConversationConfigFlow(ConfigFlow, domain=DOMAIN):
     """Config flow: ask for API key, then configure subentries."""
 
-    VERSION = 1
+    VERSION = 2
 
     def _async_api_key_form(
         self, *, step_id: str, errors: dict[str, str] | None = None
@@ -211,10 +211,16 @@ class _BaseOpenCodeGoSubentryFlow(ConfigSubentryFlow):
                 data = self._default_data.copy()
                 data[CONF_MODEL] = user_input[CONF_MODEL]
                 if self._supports_prompt_and_apis:
-                    data[CONF_PROMPT] = user_input.get(
-                        CONF_PROMPT, llm.DEFAULT_INSTRUCTIONS_PROMPT
+                    data[CONF_PROMPT] = (
+                        user_input.get(CONF_PROMPT) or llm.DEFAULT_INSTRUCTIONS_PROMPT
                     )
-                    data[CONF_LLM_HASS_API] = user_input.get(CONF_LLM_HASS_API) or []
+                    # An untouched multi-select is absent from user_input; keep
+                    # the recommended Assist API instead of silently disabling
+                    # Home Assistant control.
+                    selected_apis = user_input.get(CONF_LLM_HASS_API)
+                    if selected_apis is None:
+                        selected_apis = self._default_data.get(CONF_LLM_HASS_API, [])
+                    data[CONF_LLM_HASS_API] = selected_apis
                 return self._finalize_subentry(data)
 
             self._init_data = user_input
@@ -258,7 +264,15 @@ class _BaseOpenCodeGoSubentryFlow(ConfigSubentryFlow):
                             )
                         },
                     ): TemplateSelector(),
-                    vol.Optional(CONF_LLM_HASS_API): SelectSelector(
+                    vol.Optional(
+                        CONF_LLM_HASS_API,
+                        description={
+                            "suggested_value": options.get(
+                                CONF_LLM_HASS_API,
+                                self._default_data.get(CONF_LLM_HASS_API),
+                            )
+                        },
+                    ): SelectSelector(
                         SelectSelectorConfig(
                             options=cast(list[SelectOptionDict] | list[str], hass_apis),
                             multiple=True,
@@ -320,11 +334,10 @@ class _BaseOpenCodeGoSubentryFlow(ConfigSubentryFlow):
 
     def _finalize_subentry(self, data: dict[str, Any]) -> SubentryFlowResult:
         model = data.get(CONF_MODEL) or ""
-        title = (
-            f"OpenCode Go ({model.removeprefix('opencode-go/')})"
-            if model
-            else "OpenCode Go"
-        )
+        # The config entry title already says "OpenCode Go"; the subentry title
+        # is only the model, so Home Assistant renders "<entry> <model>" without
+        # repeating the integration name.
+        title = model.removeprefix("opencode-go/") if model else "OpenCode Go"
 
         if self._is_new:
             return self.async_create_entry(title=title, data=data)

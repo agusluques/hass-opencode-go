@@ -42,6 +42,7 @@ from .routing import (
     ModelCatalog,
     ModelRoute,
     resolve_model_route,
+    supports_image_generation,
 )
 
 __all__ = [
@@ -57,6 +58,7 @@ __all__ = [
     "ModelCatalog",
     "ModelRoute",
     "resolve_model_route",
+    "supports_image_generation",
     "OpenCodeGoClient",
     "OpenCodeGoError",
     "OpenCodeGoApiError",

@@ -305,3 +305,75 @@ async def anthropic_sse_iter(
                 )
             pending_calls.clear()
             yield ResponseCompleted(usage=usage)
+
+
+async def google_sse_iter(
+    resp: aiohttp.ClientResponse,
+) -> AsyncIterator[ResponseEvent]:
+    """Iterate over Google Generative Language ``streamGenerateContent`` SSE."""
+    usage: dict[str, Any] = {}
+    call_counter = 0
+
+    async for _event_name, data_str in _sse_records(resp):
+        if not data_str or data_str == "[DONE]":
+            continue
+        try:
+            evt: dict[str, Any] = json.loads(data_str)
+        except json.JSONDecodeError:
+            _LOGGER.debug(
+                "opencode_api.sse: unparsable Google payload: %.120s", data_str
+            )
+            continue
+
+        error = evt.get("error")
+        if isinstance(error, dict):
+            raise OpenCodeGoStreamError(
+                str(error.get("message") or "OpenCode Go Google stream failed")
+            )
+
+        metadata = evt.get("usageMetadata")
+        if isinstance(metadata, dict):
+            usage.update(metadata)
+
+        candidates = evt.get("candidates")
+        if not isinstance(candidates, list):
+            continue
+
+        for candidate in candidates:
+            if not isinstance(candidate, dict):
+                continue
+            content = candidate.get("content")
+            if not isinstance(content, dict):
+                continue
+            parts = content.get("parts")
+            if not isinstance(parts, list):
+                continue
+
+            for part in parts:
+                if not isinstance(part, dict):
+                    continue
+
+                text = part.get("text")
+                if isinstance(text, str) and text and not part.get("thought"):
+                    yield OutputTextDelta(delta=text)
+
+                call = part.get("functionCall")
+                if not isinstance(call, dict):
+                    continue
+                name = str(call.get("name") or "")
+                if not name:
+                    continue
+                arguments = call.get("args")
+                if not isinstance(arguments, dict):
+                    arguments = {}
+                call_id = str(call.get("id") or "")
+                if not call_id:
+                    call_counter += 1
+                    call_id = f"google-call-{call_counter}"
+                yield FunctionCallAdded(call_id=call_id, name=name, item_id=call_id)
+                yield FunctionCallArgumentsDone(
+                    arguments=json.dumps(arguments),
+                    item_id=call_id,
+                )
+
+    yield ResponseCompleted(usage=usage)

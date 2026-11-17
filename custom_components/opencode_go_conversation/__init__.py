@@ -10,8 +10,9 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .const import CONF_API_KEY, DOMAIN
+from .const import CONF_API_KEY, CONF_MODEL, DOMAIN
 from .opencode_api import OpenCodeGoAuth, OpenCodeGoClient
+from .opencode_api.routing import MODEL_PREFIX
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -44,6 +45,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
+    return True
+
+
+async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Migrate subentry titles from "OpenCode Go (model)" to just the model."""
+    if entry.version < 2:
+        for subentry in entry.subentries.values():
+            model = subentry.data.get(CONF_MODEL)
+            if not isinstance(model, str) or not model:
+                continue
+            title = model.removeprefix(MODEL_PREFIX)
+            if subentry.title != title:
+                hass.config_entries.async_update_subentry(entry, subentry, title=title)
+        hass.config_entries.async_update_entry(entry, version=2)
     return True
 
 

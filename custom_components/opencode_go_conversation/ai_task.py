@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 from json import JSONDecodeError
 import logging
 from typing import Any
@@ -10,6 +11,7 @@ from homeassistant.components import ai_task, conversation
 from homeassistant.config_entries import ConfigEntry, ConfigSubentry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util.json import json_loads
@@ -25,9 +27,22 @@ from .const import (
     RECOMMENDED_TEXT_VERBOSITY,
 )
 from .conversation import MAX_TOOL_ITERATIONS, async_run_chat_log
-from .opencode_api import OpenCodeGoAuth, OpenCodeGoClient
+from .opencode_api import (
+    OpenCodeGoAuth,
+    OpenCodeGoClient,
+    supports_image_generation,
+)
 
 _LOGGER = logging.getLogger(__name__)
+
+_PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+
+
+def _png_size(data: bytes) -> tuple[int | None, int | None]:
+    """Return the width and height of a PNG payload."""
+    if len(data) < 24 or not data.startswith(_PNG_SIGNATURE):
+        return None, None
+    return int.from_bytes(data[16:20], "big"), int.from_bytes(data[20:24], "big")
 
 
 async def async_setup_entry(
@@ -49,7 +64,7 @@ class OpenCodeGoAITaskEntity(ai_task.AITaskEntity):
     """AI Task entity backed by OpenCode Go."""
 
     _attr_has_entity_name = True
-    _attr_name = "AI Task"
+    _attr_name = None
 
     def __init__(
         self,
@@ -63,11 +78,14 @@ class OpenCodeGoAITaskEntity(ai_task.AITaskEntity):
         self._subentry = subentry
         self._api_key = api_key
         self._attr_unique_id = subentry.subentry_id
-        self._attr_name = subentry.title
-        self._attr_supported_features = (
+        features = (
             ai_task.AITaskEntityFeature.GENERATE_DATA
             | ai_task.AITaskEntityFeature.SUPPORT_ATTACHMENTS
         )
+        model = subentry.data.get(CONF_MODEL)
+        if isinstance(model, str) and supports_image_generation(model):
+            features |= ai_task.AITaskEntityFeature.GENERATE_IMAGE
+        self._attr_supported_features = features
 
     @property
     def _options(self) -> Any:
@@ -87,11 +105,39 @@ class OpenCodeGoAITaskEntity(ai_task.AITaskEntity):
     @property
     def device_info(self) -> dict:
         return {
-            "identifiers": {(DOMAIN, self._entry.entry_id)},
-            "name": "OpenCode Go",
+            "identifiers": {(DOMAIN, self._subentry.subentry_id)},
+            "name": self._subentry.title,
             "manufacturer": "OpenCode",
-            "model": self._options.get(CONF_MODEL) or "Not configured",
+            "entry_type": dr.DeviceEntryType.SERVICE,
         }
+
+    async def _async_generate_image(
+        self,
+        task: ai_task.GenImageTask,
+        chat_log: conversation.ChatLog,
+    ) -> ai_task.GenImageTaskResult:
+        """Generate an image through the Responses ``image_generation`` tool."""
+        model = self._model
+        conversation_id = chat_log.conversation_id or f"{self.entity_id}-image"
+        client = OpenCodeGoClient(
+            OpenCodeGoAuth(async_get_clientsession(self.hass), self._api_key)
+        )
+        encoded = await client.async_generate_image(
+            model=model,
+            instructions=task.instructions,
+            session_id=conversation_id,
+        )
+        image_data = base64.b64decode(encoded)
+
+        width, height = _png_size(image_data)
+        return ai_task.GenImageTaskResult(
+            image_data=image_data,
+            conversation_id=conversation_id,
+            mime_type="image/png",
+            width=width,
+            height=height,
+            model=model,
+        )
 
     async def _async_generate_data(
         self,
