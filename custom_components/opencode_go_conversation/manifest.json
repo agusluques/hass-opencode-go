@@ -9,11 +9,11 @@
     "ai_task",
     "conversation"
   ],
-  "documentation": "https://github.com/agusluques/hass-opencode-go-conversation",
+  "documentation": "https://github.com/agusluques/hass-opencode-go",
   "iot_class": "cloud_polling",
-  "issue_tracker": "https://github.com/agusluques/hass-opencode-go-conversation/issues",
+  "issue_tracker": "https://github.com/agusluques/hass-opencode-go/issues",
   "requirements": [
     "voluptuous-openapi==0.4.1"
   ],
-  "version": "0.4.0"
+  "version": "0.4.1"
 }

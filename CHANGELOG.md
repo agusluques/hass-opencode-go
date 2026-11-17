@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-11-17
+
+### Changed
+
+- Repository, Python project and integration metadata renamed from
+  `hass-opencode-go-conversation` to `hass-opencode-go`; the Home Assistant
+  domain stays `opencode_go_conversation` so existing installs keep working.
+- Client user agent updated to `hass-opencode-go/0.4.1`.
+
 ## [0.4.0] - 2026-11-17
 
 ### Added
@@ -94,8 +103,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - API key config flow, conversation agent and AI Task support.
 - HACS-compatible repository layout and initial brand assets.
 
-[Unreleased]: https://github.com/agusluques/hass-opencode-go-conversation/compare/v0.4.0...HEAD
-[0.4.0]: https://github.com/agusluques/hass-opencode-go-conversation/compare/v0.3.0...v0.4.0
-[0.3.0]: https://github.com/agusluques/hass-opencode-go-conversation/compare/v0.2.0...v0.3.0
-[0.2.0]: https://github.com/agusluques/hass-opencode-go-conversation/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/agusluques/hass-opencode-go-conversation/releases/tag/v0.1.0
+[Unreleased]: https://github.com/agusluques/hass-opencode-go/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/agusluques/hass-opencode-go/compare/v0.4.0...v0.4.1
+[0.4.0]: https://github.com/agusluques/hass-opencode-go/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/agusluques/hass-opencode-go/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/agusluques/hass-opencode-go/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/agusluques/hass-opencode-go/releases/tag/v0.1.0

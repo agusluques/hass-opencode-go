@@ -17,7 +17,7 @@ body:
            ```
 
         2. Search the existing issues and the troubleshooting table in the
-           [README](https://github.com/agusluques/hass-opencode-go-conversation#troubleshooting).
+           [README](https://github.com/agusluques/hass-opencode-go#troubleshooting).
   - type: input
     attributes:
       label: Home Assistant version

@@ -2,13 +2,13 @@
 
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2026.3%2B-18BCF2?logo=homeassistant&logoColor=white)](https://www.home-assistant.io/)
 [![HACS](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/)
-[![Release](https://img.shields.io/github/v/release/agusluques/hass-opencode-go-conversation?color=3DDC97)](../../releases)
+[![Release](https://img.shields.io/github/v/release/agusluques/hass-opencode-go?color=3DDC97)](../../releases)
 [![License](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
 A Home Assistant custom integration that turns **[OpenCode Go](https://opencode.ai/console/go)** models into Assist conversation agents, AI Tasks and an image generator. Ask your home questions, control entities with the Assist API, generate structured data or images — all billed through your OpenCode Go subscription.
 
 > This is the community fork maintained at
-> [`agusluques/hass-opencode-go-conversation`](https://github.com/agusluques/hass-opencode-go-conversation),
+> [`agusluques/hass-opencode-go`](https://github.com/agusluques/hass-opencode-go),
 > based on the original work by [@avegao](https://github.com/avegao).
 
 ## Features
@@ -36,10 +36,10 @@ A Home Assistant custom integration that turns **[OpenCode Go](https://opencode.
 
 ### HACS
 
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=agusluques&repository=hass-opencode-go-conversation&category=integration)
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=agusluques&repository=hass-opencode-go&category=integration)
 
 1. Open HACS → **Integrations** → **⋮** → **Custom repositories**.
-2. Add `https://github.com/agusluques/hass-opencode-go-conversation` as an **Integration**.
+2. Add `https://github.com/agusluques/hass-opencode-go` as an **Integration**.
 3. Search for **OpenCode Go**, install it and restart Home Assistant.
 
 ### Manual
