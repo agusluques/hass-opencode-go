@@ -44,7 +44,7 @@ A Home Assistant custom integration that turns **[OpenCode Go](https://opencode.
 
 ### Manual
 
-1. Download the latest release and copy `custom_components/opencode_go_conversation`
+1. Download the latest release and copy `custom_components/opencode_go`
    into your Home Assistant `config/custom_components/` directory.
 2. Restart Home Assistant.
 
@@ -122,7 +122,7 @@ Enable debug logging from the integration page before capturing logs:
 ```yaml
 logger:
   logs:
-    custom_components.opencode_go_conversation: debug
+    custom_components.opencode_go: debug
 ```
 
 ## Development
@@ -162,7 +162,7 @@ Home Assistant installation.
 HACS installs **releases**, so a release must be tested before it is published
 as latest:
 
-1. **Bump the version** in `custom_components/opencode_go_conversation/manifest.json`
+1. **Bump the version** in `custom_components/opencode_go/manifest.json`
    and `pyproject.toml`, and move the changes in `CHANGELOG.md` from
    `Unreleased` to the new version.
 2. **Validate locally**: `./script/check` and `./script/hassfest`.

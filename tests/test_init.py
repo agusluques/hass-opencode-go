@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from custom_components.opencode_go_conversation import (
+from custom_components.opencode_go import (
     async_setup,
     async_setup_entry,
     async_unload_entry,
 )
-from custom_components.opencode_go_conversation.const import DOMAIN
+from custom_components.opencode_go.const import DOMAIN
 
 
 async def test_async_setup_returns_true(hass):

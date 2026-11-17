@@ -19,19 +19,19 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import llm
 import pytest
 
-from custom_components.opencode_go_conversation.conversation import (
+from custom_components.opencode_go.conversation import (
     MAX_TOOL_ITERATIONS,
     _events_to_deltas,
     async_run_chat_log,
 )
-from custom_components.opencode_go_conversation.opencode_api import (
+from custom_components.opencode_go.opencode_api import (
     FunctionCallAdded,
     FunctionCallArgumentsDone,
     OpenCodeGoClient,
     OpenCodeGoRequest,
     OutputTextDelta,
 )
-from custom_components.opencode_go_conversation.transform import (
+from custom_components.opencode_go.transform import (
     build_chat_messages,
     build_input_items,
     extract_instructions,
@@ -69,7 +69,7 @@ async def test_build_input_items_tool_result():
     chat_log = make_chat_log(
         [
             ToolResultContent(
-                agent_id="conversation.opencode_go_conversation",
+                agent_id="conversation.opencode_go",
                 tool_call_id="call_1",
                 tool_name="turn_on",
                 tool_result={"success": True},
@@ -100,12 +100,12 @@ async def test_build_chat_messages_preserves_text_and_tool_calls():
             SystemContent(content="You are helpful."),
             UserContent(content="Hello"),
             AssistantContent(
-                agent_id="conversation.opencode_go_conversation",
+                agent_id="conversation.opencode_go",
                 content="Turning on the light.",
                 tool_calls=[cast(Any, tool_call)],
             ),
             ToolResultContent(
-                agent_id="conversation.opencode_go_conversation",
+                agent_id="conversation.opencode_go",
                 tool_call_id="call_1",
                 tool_name="turn_on",
                 tool_result={"success": True},
@@ -165,7 +165,7 @@ async def test_async_run_chat_log_appends_final_assistant_content():
         chat_log=chat_log,
         client=cast(OpenCodeGoClient, FakeClient()),
         model="opencode-go/kimi-k3",
-        entity_id="conversation.opencode_go_conversation",
+        entity_id="conversation.opencode_go",
         reasoning_effort="medium",
         reasoning_summary="off",
         text_verbosity="medium",
@@ -191,7 +191,7 @@ async def test_async_run_chat_log_rejects_missing_conversation_id():
             chat_log=chat_log,
             client=cast(OpenCodeGoClient, FakeClient()),
             model="opencode-go/kimi-k3",
-            entity_id="conversation.opencode_go_conversation",
+            entity_id="conversation.opencode_go",
             reasoning_effort="medium",
             reasoning_summary="off",
             text_verbosity="medium",
@@ -212,7 +212,7 @@ async def test_async_run_chat_log_caps_tool_iterations():
         chat_log=chat_log,
         client=cast(OpenCodeGoClient, FakeClient()),
         model="opencode-go/kimi-k3",
-        entity_id="conversation.opencode_go_conversation",
+        entity_id="conversation.opencode_go",
         reasoning_effort="medium",
         reasoning_summary="off",
         text_verbosity="medium",
@@ -227,7 +227,7 @@ async def test_async_run_chat_log_passes_custom_serializer_to_tool_formatter(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Forward HA's selector serializer to the schema converter."""
-    import custom_components.opencode_go_conversation.conversation as conversation
+    import custom_components.opencode_go.conversation as conversation
 
     def serializer(schema: object) -> dict[str, str]:
         return {"type": "string"}
@@ -251,7 +251,7 @@ async def test_async_run_chat_log_passes_custom_serializer_to_tool_formatter(
         chat_log=chat_log,
         client=cast(OpenCodeGoClient, FakeClient()),
         model="opencode-go/kimi-k3",
-        entity_id="conversation.opencode_go_conversation",
+        entity_id="conversation.opencode_go",
         reasoning_effort="medium",
         reasoning_summary="off",
         text_verbosity="medium",
@@ -279,7 +279,7 @@ async def test_async_run_chat_log_without_no_entities_prompt_constant(
         chat_log=chat_log,
         client=cast(OpenCodeGoClient, FakeClient()),
         model="opencode-go/kimi-k3",
-        entity_id="conversation.opencode_go_conversation",
+        entity_id="conversation.opencode_go",
         reasoning_effort="medium",
         reasoning_summary="off",
         text_verbosity="medium",

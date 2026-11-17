@@ -2,7 +2,7 @@
 
 ## Project Structure
 
-This repository is a Home Assistant custom integration for OpenCode Go. Runtime code lives in `custom_components/opencode_go_conversation/`; keep Home Assistant entry points (`conversation.py`, `ai_task.py`, `config_flow.py`) separate from transport code under `opencode_api/`. Metadata and UI strings are in `manifest.json`, `strings.json`, and `translations/`. Tests are in `tests/`, development configuration is in `config/`, and reusable commands are in `script/`. HACS branding assets are in the integration’s `brand/` directory and at the repository root.
+This repository is a Home Assistant custom integration for OpenCode Go. Runtime code lives in `custom_components/opencode_go/`; keep Home Assistant entry points (`conversation.py`, `ai_task.py`, `config_flow.py`) separate from transport code under `opencode_api/`. Metadata and UI strings are in `manifest.json`, `strings.json`, and `translations/`. Tests are in `tests/`, development configuration is in `config/`, and reusable commands are in `script/`. HACS branding assets are in the integration’s `brand/` directory and at the repository root.
 
 ## Build, Test, and Development Commands
 

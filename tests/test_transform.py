@@ -14,7 +14,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import llm
 import pytest
 
-from custom_components.opencode_go_conversation.transform import (
+from custom_components.opencode_go.transform import (
     async_prepare_files_for_prompt,
     build_input_items,
 )
@@ -77,7 +77,7 @@ def test_build_input_items_preserves_assistant_text_tool_calls_and_native() -> N
         tool_args={"entity_id": "light.kitchen"},
     )
     assistant_content = AssistantContent(
-        agent_id="conversation.opencode_go_conversation",
+        agent_id="conversation.opencode_go",
         content="Turning on the light.",
         thinking_content="Need to call the Home Assistant tool first.",
         tool_calls=[tool_call],
@@ -112,7 +112,7 @@ def test_format_tool_uses_probatio_when_voluptuous_openapi_is_unavailable(
     """Use Home Assistant's 2026.9 schema converter when available."""
     import voluptuous as vol
 
-    import custom_components.opencode_go_conversation.transform as transform
+    import custom_components.opencode_go.transform as transform
 
     calls: list[tuple[object, object]] = []
 
@@ -146,7 +146,7 @@ def test_format_tool_falls_back_to_legacy_converter(
     """Keep supporting Home Assistant versions without probatio."""
     import voluptuous as vol
 
-    import custom_components.opencode_go_conversation.transform as transform
+    import custom_components.opencode_go.transform as transform
 
     calls: list[tuple[object, object]] = []
 
@@ -182,7 +182,7 @@ def test_format_tool_reports_internal_probatio_import_failure(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Do not hide an import failure from inside probatio."""
-    import custom_components.opencode_go_conversation.transform as transform
+    import custom_components.opencode_go.transform as transform
 
     def broken_probatio(name: str) -> ModuleType:
         raise ModuleNotFoundError(

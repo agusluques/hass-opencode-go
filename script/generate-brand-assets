@@ -194,7 +194,7 @@ def main() -> None:
     save(dark_logo, ROOT / "dark_logo.png", (640, 160))
     save(dark_logo, ROOT / "dark_logo@2x.png", (1280, 320))
 
-    brand = ROOT / "custom_components/opencode_go_conversation/brand"
+    brand = ROOT / "custom_components/opencode_go/brand"
     brand.mkdir(parents=True, exist_ok=True)
     save(master, brand / "icon.png", (256, 256))
     save(master, brand / "icon@2x.png", (512, 512))

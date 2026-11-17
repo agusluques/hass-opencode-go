@@ -6,10 +6,7 @@ import json
 from pathlib import Path
 
 MANIFEST_PATH = (
-    Path(__file__).parents[1]
-    / "custom_components"
-    / "opencode_go_conversation"
-    / "manifest.json"
+    Path(__file__).parents[1] / "custom_components" / "opencode_go" / "manifest.json"
 )
 
 

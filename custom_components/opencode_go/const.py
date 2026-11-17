@@ -3,7 +3,7 @@
 from homeassistant.const import CONF_LLM_HASS_API  # noqa: F401
 from homeassistant.helpers import llm
 
-DOMAIN = "opencode_go_conversation"
+DOMAIN = "opencode_go"
 
 # Options keys
 CONF_MODEL = "model"

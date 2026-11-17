@@ -13,11 +13,11 @@ from homeassistant.config_entries import ConfigSubentry
 import pytest
 import voluptuous as vol
 
-from custom_components.opencode_go_conversation.ai_task import (
+from custom_components.opencode_go.ai_task import (
     OpenCodeGoAITaskEntity,
     _format_structure_instruction,
 )
-from custom_components.opencode_go_conversation.opencode_api import OutputTextDelta
+from custom_components.opencode_go.opencode_api import OutputTextDelta
 
 from .conftest import make_chat_log
 
@@ -30,7 +30,7 @@ def mock_ai_task_entity(hass, mock_config_entry, mock_ai_task_subentry):
         "test_api_key",
         cast(ConfigSubentry, mock_ai_task_subentry),
     )
-    entity.entity_id = "ai_task.opencode_go_conversation"
+    entity.entity_id = "ai_task.opencode_go"
     entity.hass = hass
     return entity
 
@@ -53,7 +53,7 @@ async def test_generate_data_returns_text_result(mock_ai_task_entity):
             yield OutputTextDelta(delta="Result text", content_index=0)
 
     with patch(
-        "custom_components.opencode_go_conversation.ai_task.OpenCodeGoClient",
+        "custom_components.opencode_go.ai_task.OpenCodeGoClient",
         return_value=FakeClient(),
     ):
         result = await mock_ai_task_entity._async_generate_data(task, chat_log)
@@ -80,7 +80,7 @@ async def test_generate_data_parses_json_result(mock_ai_task_entity):
             yield OutputTextDelta(delta='{"answer":"ok"}', content_index=0)
 
     with patch(
-        "custom_components.opencode_go_conversation.ai_task.OpenCodeGoClient",
+        "custom_components.opencode_go.ai_task.OpenCodeGoClient",
         return_value=FakeClient(),
     ):
         result = await mock_ai_task_entity._async_generate_data(task, chat_log)
@@ -151,7 +151,7 @@ async def test_generate_image_returns_decoded_png(mock_ai_task_entity):
     chat_log = make_chat_log([])
 
     with patch(
-        "custom_components.opencode_go_conversation.ai_task.OpenCodeGoClient",
+        "custom_components.opencode_go.ai_task.OpenCodeGoClient",
         FakeClient,
     ):
         result = await mock_ai_task_entity._async_generate_image(task, chat_log)

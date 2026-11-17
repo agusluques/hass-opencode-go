@@ -12,13 +12,13 @@ import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 import voluptuous as vol
 
-from custom_components.opencode_go_conversation import async_migrate_entry
-from custom_components.opencode_go_conversation.config_flow import (
+from custom_components.opencode_go import async_migrate_entry
+from custom_components.opencode_go.config_flow import (
     OpenCodeGoConversationConfigFlow,
     OpenCodeGoConversationSubentryFlow,
     _async_fetch_models,
 )
-from custom_components.opencode_go_conversation.const import (
+from custom_components.opencode_go.const import (
     CONF_API_KEY,
     CONF_MODEL,
     CONF_PROMPT,
@@ -26,7 +26,7 @@ from custom_components.opencode_go_conversation.const import (
     RECOMMENDED_AI_TASK_OPTIONS,
     RECOMMENDED_CONVERSATION_OPTIONS,
 )
-from custom_components.opencode_go_conversation.opencode_api import OpenCodeGoApiError
+from custom_components.opencode_go.opencode_api import OpenCodeGoApiError
 
 
 @pytest.mark.asyncio
@@ -35,7 +35,7 @@ async def test_user_step_creates_entry_on_valid_api_key(hass):
     flow.hass = hass
 
     with patch(
-        "custom_components.opencode_go_conversation.config_flow._async_validate_api_key",
+        "custom_components.opencode_go.config_flow._async_validate_api_key",
         new=AsyncMock(),
     ):
         result = await flow.async_step_user({"api_key": "test_api_key"})
@@ -54,7 +54,7 @@ async def test_user_step_shows_error_on_invalid_api_key(hass):
     flow.hass = hass
 
     with patch(
-        "custom_components.opencode_go_conversation.config_flow._async_validate_api_key",
+        "custom_components.opencode_go.config_flow._async_validate_api_key",
         new=AsyncMock(side_effect=OpenCodeGoApiError(401, "nope")),
     ):
         result = await flow.async_step_user({"api_key": "bad"})
@@ -78,7 +78,7 @@ async def test_reconfigure_step_updates_api_key(hass, mock_config_entry):
     }
 
     with patch(
-        "custom_components.opencode_go_conversation.config_flow._async_validate_api_key",
+        "custom_components.opencode_go.config_flow._async_validate_api_key",
         new=AsyncMock(),
     ):
         result = await flow.async_step_reconfigure({"api_key": "new_api_key"})
@@ -92,12 +92,10 @@ async def test_reconfigure_step_updates_api_key(hass, mock_config_entry):
 async def test_fetch_models_uses_the_live_catalog(hass):
     with (
         patch(
-            "custom_components.opencode_go_conversation.config_flow.OpenCodeGoClient.list_models",
+            "custom_components.opencode_go.config_flow.OpenCodeGoClient.list_models",
             new=AsyncMock(return_value=["opencode-go/deepseek-v4.1-flash"]),
         ),
-        patch(
-            "custom_components.opencode_go_conversation.config_flow.async_get_clientsession"
-        ),
+        patch("custom_components.opencode_go.config_flow.async_get_clientsession"),
     ):
         models = await _async_fetch_models(hass, "test_api_key")
 
@@ -108,12 +106,10 @@ async def test_fetch_models_uses_the_live_catalog(hass):
 async def test_fetch_models_does_not_fall_back_to_a_stale_snapshot(hass):
     with (
         patch(
-            "custom_components.opencode_go_conversation.config_flow.OpenCodeGoClient.list_models",
+            "custom_components.opencode_go.config_flow.OpenCodeGoClient.list_models",
             new=AsyncMock(side_effect=Exception("boom")),
         ),
-        patch(
-            "custom_components.opencode_go_conversation.config_flow.async_get_clientsession"
-        ),
+        patch("custom_components.opencode_go.config_flow.async_get_clientsession"),
         pytest.raises(Exception, match="boom"),
     ):
         await _async_fetch_models(hass, "test_api_key")

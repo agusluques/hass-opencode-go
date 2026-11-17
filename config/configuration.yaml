@@ -155,4 +155,4 @@ logger:
     homeassistant.config_entries: info
 
     # Your integration debug logging - shows EVERYTHING from your integration
-    custom_components.opencode_go_conversation: debug
+    custom_components.opencode_go: debug

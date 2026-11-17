@@ -7,7 +7,7 @@ from typing import Any, cast
 import aiohttp
 import pytest
 
-from custom_components.opencode_go_conversation.opencode_api import (
+from custom_components.opencode_go.opencode_api import (
     OPENCODE_GO_USER_AGENT,
     AbstractAuth,
     OpenCodeGoAuth,
@@ -16,18 +16,18 @@ from custom_components.opencode_go_conversation.opencode_api import (
     OpenCodeGoModelNotInGo,
     OpenCodeGoRequest,
 )
-from custom_components.opencode_go_conversation.opencode_api.models import (
+from custom_components.opencode_go.opencode_api.models import (
     FunctionCallAdded,
     FunctionCallArgumentsDone,
     OutputTextDelta,
     ResponseCompleted,
 )
-from custom_components.opencode_go_conversation.opencode_api.routing import (
+from custom_components.opencode_go.opencode_api.routing import (
     MODEL_CATALOG,
     ModelRoute,
     supports_image_generation,
 )
-from custom_components.opencode_go_conversation.opencode_api.sse import (
+from custom_components.opencode_go.opencode_api.sse import (
     anthropic_sse_iter,
     google_sse_iter,
     responses_sse_iter,

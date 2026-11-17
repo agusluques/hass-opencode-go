@@ -49,11 +49,11 @@ PYTEST_ARGS=()
 while [[ $# -gt 0 ]]; do
     case $1 in
         --cov)
-            COVERAGE_ARGS+=("--cov=custom_components/opencode_go_conversation" "--cov-report=term-missing")
+            COVERAGE_ARGS+=("--cov=custom_components/opencode_go" "--cov-report=term-missing")
             shift
             ;;
         --cov-html)
-            COVERAGE_ARGS+=("--cov=custom_components/opencode_go_conversation" "--cov-report=html")
+            COVERAGE_ARGS+=("--cov=custom_components/opencode_go" "--cov-report=html")
             shift
             ;;
         *)

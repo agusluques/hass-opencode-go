@@ -1,5 +1,5 @@
 {
-  "domain": "opencode_go_conversation",
+  "domain": "opencode_go",
   "name": "OpenCode Go",
   "codeowners": [
     "@agusluques"
@@ -15,5 +15,5 @@
   "requirements": [
     "voluptuous-openapi==0.4.1"
   ],
-  "version": "0.4.1"
+  "version": "0.5.0"
 }

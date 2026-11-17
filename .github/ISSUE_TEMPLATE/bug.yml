@@ -13,7 +13,7 @@ body:
            ```yaml
            logger:
              logs:
-               custom_components.opencode_go_conversation: debug
+               custom_components.opencode_go: debug
            ```
 
         2. Search the existing issues and the troubleshooting table in the

@@ -81,7 +81,7 @@ check_if_needs_initialization() {
     fi
 
     # Check 2: Template domain must still exist
-    if ! grep -q "opencode_go_conversation" custom_components/*/manifest.json 2>/dev/null; then
+    if ! grep -q "opencode_go" custom_components/*/manifest.json 2>/dev/null; then
         return 1  # Already initialized (domain renamed)
     fi
 

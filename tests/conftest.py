@@ -15,20 +15,20 @@ from homeassistant.config_entries import ConfigSubentry  # noqa: E402
 import pytest  # noqa: E402
 from pytest_homeassistant_custom_component.common import MockConfigEntry  # noqa: E402
 
-from custom_components.opencode_go_conversation.ai_task import (  # noqa: E402
+from custom_components.opencode_go.ai_task import (  # noqa: E402
     OpenCodeGoAITaskEntity,
 )
-from custom_components.opencode_go_conversation.const import (  # noqa: E402
+from custom_components.opencode_go.const import (  # noqa: E402
     CONF_API_KEY,
     CONF_MODEL,
     DOMAIN,
     RECOMMENDED_AI_TASK_OPTIONS,
     RECOMMENDED_CONVERSATION_OPTIONS,
 )
-from custom_components.opencode_go_conversation.conversation import (  # noqa: E402
+from custom_components.opencode_go.conversation import (  # noqa: E402
     OpenCodeGoConversationEntity,
 )
-from custom_components.opencode_go_conversation.opencode_api.routing import (  # noqa: E402
+from custom_components.opencode_go.opencode_api.routing import (  # noqa: E402
     MODEL_CATALOG,
     ModelRoute,
 )
