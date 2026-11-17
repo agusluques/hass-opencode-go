@@ -1,6 +1,6 @@
 ## Description
 
-<!-- Describe the change -->
+<!-- What does this change and why? -->
 
 ## Related Issue
 
@@ -16,10 +16,11 @@ Fixes #(issue)
 
 ## Checklist
 
-- [ ] I have read `CONTRIBUTING.md`
-- [ ] I ran `script/lint` or `script/lint-check`
-- [ ] I updated tests or docs when needed
+- [ ] I read `CONTRIBUTING.md`
+- [ ] `./script/check` passes (tests, lint, types, spelling, hassfest)
+- [ ] I updated tests, docs and `CHANGELOG.md` when behavior changed
+- [ ] No API keys or real conversation logs are included
 
 ## Testing
 
-<!-- Describe how you validated the change -->
+<!-- Describe how you validated the change, including the model used. -->

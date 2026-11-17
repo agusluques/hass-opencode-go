@@ -1,5 +1,6 @@
 name: Feature request
-description: Suggest an idea for the custom integration
+description: Suggest an idea for OpenCode Go Conversation
+title: "[Feature]: "
 labels: [enhancement]
 body:
   - type: checkboxes
@@ -11,13 +12,20 @@ body:
   - type: textarea
     attributes:
       label: Problem
+      description: What are you trying to do that the integration does not support?
     validations:
       required: true
   - type: textarea
     attributes:
       label: Proposed solution
+      description: How would you like it to work?
     validations:
       required: true
   - type: textarea
     attributes:
+      label: Alternatives considered
+      description: Other approaches or workarounds you have tried.
+  - type: textarea
+    attributes:
       label: Additional context
+      description: Links to OpenCode Go documentation, screenshots, related issues.

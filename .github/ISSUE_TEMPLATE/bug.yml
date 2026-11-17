@@ -1,7 +1,23 @@
 name: Bug report
-description: Report a bug with the custom integration
+description: Something is not working with OpenCode Go Conversation
+title: "[Bug]: "
 labels: [bug]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Before filing, please:
+
+        1. Enable debug logging and reproduce the problem:
+
+           ```yaml
+           logger:
+             logs:
+               custom_components.opencode_go_conversation: debug
+           ```
+
+        2. Search the existing issues and the troubleshooting table in the
+           [README](https://github.com/agusluques/hass-opencode-go-conversation#troubleshooting).
   - type: input
     attributes:
       label: Home Assistant version
@@ -11,18 +27,36 @@ body:
   - type: input
     attributes:
       label: Integration version
-      placeholder: 0.2.0
+      placeholder: 0.3.0
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: Installation method
+      options:
+        - HACS
+        - Manual copy
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Model in use
+      description: The model selected in the agent or AI Task options.
+      placeholder: deepseek-v4.1-flash
+    validations:
+      required: true
   - type: checkboxes
     attributes:
       label: Checklist
       options:
-        - label: I enabled debug logging.
+        - label: I enabled debug logging and reproduced the issue.
           required: true
         - label: I searched existing issues first.
           required: true
   - type: textarea
     attributes:
       label: Describe the issue
+      description: What happened, and what did you expect instead?
     validations:
       required: true
   - type: textarea
@@ -37,4 +71,5 @@ body:
   - type: textarea
     attributes:
       label: Relevant logs
+      description: Paste the error and the debug lines around it. Remove your API key.
       render: text
