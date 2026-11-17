@@ -14,6 +14,9 @@ Set up the managed environment with `./script/setup/bootstrap` (or `uv sync --gr
 - `./script/type-check` — run `ty check`.
 - `./script/hassfest` — validate the integration against Home Assistant rules.
 - `./script/check` — run type, lint, spelling, and available hassfest checks.
+- `./script/generate-brand-assets` — regenerate icons and wordmarks from code.
+
+This fork has no CI: run the scripts above locally before opening a PR.
 - `./script/develop` — start Home Assistant with `config/` and the local integration on `PYTHONPATH`.
 
 Use `uv` for Python dependencies and commands; do not install packages with `pip`, `npm`, `npx`, or `yarn`.
@@ -28,7 +31,7 @@ Pytest with Home Assistant fixtures is configured through `pyproject.toml`; test
 
 ## Commits and Pull Requests
 
-Recent history is brief and mixed, so use Conventional Commits for new work, such as `fix(api): handle streaming errors` or `feat(conversation): support tool calls`. PRs should explain the change, link an issue with `Fixes #<number>` when applicable, describe validation, and complete the checklist. Update tests and documentation when behavior or setup changes; include screenshots for relevant UI or branding changes.
+Use Conventional Commits for new work, such as `fix(api): handle streaming errors` or `feat(conversation): support tool calls`. PRs should explain the change, link an issue with `Fixes #<number>` when applicable, describe validation, and complete the checklist. Update tests, `README.md` and `CHANGELOG.md` when behavior or setup changes; include screenshots for relevant UI or branding changes. Releases follow the pre-release workflow documented in the README.
 
 ## Security and Configuration
 
