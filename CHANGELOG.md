@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-17
+
+### Added
+
+- The initial setup now asks for the first conversation model and the first AI
+  Task model instead of creating subentries without a model.
+- **Name** field for conversation agents and AI Tasks, defaulting to
+  `OpenCode Go` and incrementing per entity domain (`OpenCode Go 2`, ...). The
+  name drives the device name and entity ID, so changing the model no longer
+  leaves a stale entity ID.
+- `model` exposed as a device attribute and entity state attribute.
+- **Generate images** checkbox for AI Tasks, default on and only effective for
+  Responses models.
+- Client user agent bumped to `hass-opencode-go/0.6.0`.
+
+### Changed
+
+- Clarified the **Control Home Assistant** option: the modal now explains that
+  it exposes entities and services through the Assist API.
+
+### Fixed
+
+- Subentries created by the initial setup had no model after the default model
+  was removed.
+
 ## [0.5.0] - 2026-11-17
 
 ### Changed
@@ -113,7 +138,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - API key config flow, conversation agent and AI Task support.
 - HACS-compatible repository layout and initial brand assets.
 
-[Unreleased]: https://github.com/agusluques/hass-opencode-go/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/agusluques/hass-opencode-go/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/agusluques/hass-opencode-go/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/agusluques/hass-opencode-go/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/agusluques/hass-opencode-go/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/agusluques/hass-opencode-go/compare/v0.3.0...v0.4.0

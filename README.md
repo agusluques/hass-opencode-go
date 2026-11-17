@@ -53,12 +53,18 @@ A Home Assistant custom integration that turns **[OpenCode Go](https://opencode.
 1. Go to **Settings → Devices & Services → Add Integration**.
 2. Search for **OpenCode Go** and paste your API key
    (create one at <https://opencode.ai/auth>).
-3. The integration opens the **Add conversation agent** flow:
-   - **Model** — required; the list is loaded live from your catalog.
+3. Choose the model for your first **conversation agent** and **AI Task**.
+   Both can be changed later.
+4. (Optional) Add more agents, one per model, or more AI Tasks:
+   - **Name** — defaults to `OpenCode Go`; the second agent of the same type
+     becomes `OpenCode Go 2`, and so on. It drives the device name and entity
+     ID (`conversation.open_code_go_2`, `ai_task.open_code_go`).
+   - **Model** — changing it later does **not** change the entity ID; the
+     current model is exposed as a device/entity attribute.
+   - **Control Home Assistant** — exposes entities and services through the
+     Assist API so the model can control devices. It is enabled by default.
    - **Recommended model settings** — keep this on to use the suggested prompt,
      Assist API exposure and reasoning settings, or turn it off to tune them.
-4. (Optional) Add more agents, one per model, or an **AI Task** entity for
-   structured data and image generation.
 5. In **Settings → Voice assistants**, assign the agent to your Assist pipeline.
 
 Use **Reconfigure** on the integration entry to rotate the API key, or on a
@@ -85,7 +91,9 @@ the plan. There is **no hardcoded model list and no default model**.
 
 ## Image generation
 
-Image generation is exposed through the AI Task platform:
+Image generation is exposed through the AI Task platform. Enable **Generate
+images** when adding the AI Task (it is on by default; only Responses models
+can generate images, and the option is ignored for the rest).
 
 1. Add an **AI Task** subentry with a Responses model
    (`gpt-5.6-luna`, `gpt-6-luna` or `grok-4.7`).
@@ -169,16 +177,16 @@ as latest:
 3. **Tag a pre-release**:
 
    ```bash
-   git tag v0.4.0-beta.1
-   git push origin v0.4.0-beta.1
-   gh release create v0.4.0-beta.1 --prerelease --generate-notes
+   git tag v0.6.0-beta.1
+   git push origin v0.6.0-beta.1
+   gh release create v0.6.0-beta.1 --prerelease --generate-notes
    ```
 
 4. **Test it through HACS**: in a scratch Home Assistant (the dev container is
    ideal), add this repository as a custom repository, open the integration,
    use **Download** → version selector → pick the pre-release, restart, and
    exercise setup plus a conversation.
-5. **Promote it**: create the final release with `gh release create v0.4.0`.
+5. **Promote it**: create the final release with `gh release create v0.6.0`.
    HACS only offers releases whose tag matches the manifest version, so keep
    both in sync.
 
