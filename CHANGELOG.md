@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-17
+
+### Added
+
+- Gemini support: models exposing the `generate-content` protocol are routed to
+  `/models/{model}:streamGenerateContent` on the catalog's Google base URL.
+- Image generation through `ai_task.generate_image` for Responses models
+  (`gpt-5.6-luna`, `gpt-6-luna`, `grok-4.7`), stored in the AI Task media folder.
+- Every protocol now uses the `base_url` published in the model catalog, so
+  OpenAI, Anthropic and Google requests hit the same endpoints as the official
+  OpenCode clients.
+- `supports_image_generation()` helper and tests for Google payloads, Google
+  SSE events and image generation.
+
+### Changed
+
+- The integration is now named **OpenCode Go** instead of "OpenCode Go
+  Conversation".
+- Agents and devices are named after the model only, so the Assist picker shows
+  "OpenCode Go deepseek-v4.1-flash" without repeating the integration name.
+  Existing subentries are migrated automatically.
+- "Control Home Assistant" is preselected in the form and preserved when
+  "Recommended model settings" is left checked.
+
+### Fixed
+
+- The **Assist** checkbox appeared not to work: an untouched multi-select was
+  saved as an empty list, silently disabling Home Assistant control even when
+  the recommended settings were selected.
+
 ## [0.3.0] - 2026-11-17
 
 ### Added
@@ -64,7 +94,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - API key config flow, conversation agent and AI Task support.
 - HACS-compatible repository layout and initial brand assets.
 
-[Unreleased]: https://github.com/agusluques/hass-opencode-go-conversation/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/agusluques/hass-opencode-go-conversation/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/agusluques/hass-opencode-go-conversation/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/agusluques/hass-opencode-go-conversation/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/agusluques/hass-opencode-go-conversation/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/agusluques/hass-opencode-go-conversation/releases/tag/v0.1.0
