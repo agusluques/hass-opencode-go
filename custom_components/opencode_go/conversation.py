@@ -247,6 +247,15 @@ async def async_run_chat_log(
             else instructions_suffix
         )
 
+    # LLMs cannot introspect their own identity and OpenCode Go does not inject
+    # the model name, so tell the model which one is answering.
+    model_id = model.removeprefix("opencode-go/")
+    model_note = (
+        f"You are running on the model {model_id} through OpenCode Go. "
+        "If the user asks which model you are, answer with that model ID."
+    )
+    instructions = f"{instructions}\n\n{model_note}" if instructions else model_note
+
     # OpenCode Go uses this value for prompt-cache affinity.  Home Assistant
     # keeps ``conversation_id`` stable for the lifetime of a conversation.  Do
     # not send a made-up per-request value if a custom ChatLog violates that

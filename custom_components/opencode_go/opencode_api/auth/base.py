@@ -10,7 +10,7 @@ import aiohttp
 DEFAULT_BASE_URL = "https://opencode.ai/zen/go/v1"
 # OpenCode Go asks third-party clients to identify themselves with a specific
 # user agent rather than relying on aiohttp's generic default.
-OPENCODE_GO_USER_AGENT = "hass-opencode-go/0.7.0"
+OPENCODE_GO_USER_AGENT = "hass-opencode-go/0.7.1"
 
 
 class AbstractAuth(ABC):

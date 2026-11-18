@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-11-18
+
+### Fixed
+
+- The system prompt now tells the model which model is answering, so questions
+  like "which model are you?" return the real model ID instead of a guess or
+  "I don't know".
+
 ## [0.7.0] - 2026-11-18
 
 ### Added
@@ -168,7 +176,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - API key config flow, conversation agent and AI Task support.
 - HACS-compatible repository layout and initial brand assets.
 
-[Unreleased]: https://github.com/agusluques/hass-opencode-go/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/agusluques/hass-opencode-go/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/agusluques/hass-opencode-go/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/agusluques/hass-opencode-go/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/agusluques/hass-opencode-go/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/agusluques/hass-opencode-go/compare/v0.5.0...v0.6.0

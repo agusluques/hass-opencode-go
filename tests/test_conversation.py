@@ -174,6 +174,7 @@ async def test_async_run_chat_log_appends_final_assistant_content():
     assert isinstance(chat_log.content[-1], AssistantContent)
     assert chat_log.content[-1].content == "Result text"
     assert requests[0].session_id == chat_log.conversation_id
+    assert "kimi-k3" in requests[0].instructions
 
 
 @pytest.mark.asyncio
