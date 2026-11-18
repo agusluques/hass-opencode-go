@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from homeassistant.config_entries import SOURCE_RECONFIGURE, ConfigEntryState
 from homeassistant.const import CONF_LLM_HASS_API
@@ -21,6 +21,7 @@ from custom_components.opencode_go.config_flow import (
 )
 from custom_components.opencode_go.const import (
     CONF_API_KEY,
+    CONF_IMAGE_GENERATION,
     CONF_MODEL,
     CONF_NAME,
     CONF_PROMPT,
@@ -274,3 +275,57 @@ def test_next_subentry_name_is_counted_per_domain(hass):
         assert conversation._next_subentry_name() == "OpenCode Go 3"
     with patch.object(ai_task, "_get_entry", return_value=entry):
         assert ai_task._next_subentry_name() == "OpenCode Go 2"
+
+
+@pytest.mark.asyncio
+async def test_ai_task_advanced_shows_images_only_for_responses_models(hass):
+    flow = OpenCodeGoAITaskSubentryFlow()
+    flow.hass = hass
+    flow.options = {}
+    flow._init_data = {CONF_MODEL: "opencode-go/gpt-5.6-luna"}
+
+    with patch.object(
+        flow,
+        "_get_entry",
+        return_value=SimpleNamespace(state=ConfigEntryState.LOADED, subentries={}),
+    ):
+        result = await flow.async_step_advanced()
+
+    data_schema = result["data_schema"]
+    assert data_schema is not None
+    assert "image_generation" in {str(key) for key in data_schema.schema}
+
+    flow._init_data = {CONF_MODEL: "opencode-go/deepseek-v4.1-flash"}
+    with patch.object(
+        flow,
+        "_get_entry",
+        return_value=SimpleNamespace(state=ConfigEntryState.LOADED, subentries={}),
+    ):
+        result = await flow.async_step_advanced()
+
+    data_schema = result["data_schema"]
+    assert data_schema is not None
+    assert "image_generation" not in {str(key) for key in data_schema.schema}
+
+
+def test_finalize_normalizes_image_generation_to_the_protocol(hass):
+    flow = OpenCodeGoAITaskSubentryFlow()
+    flow.hass = hass
+    flow.context = {"source": "user"}
+
+    flow.async_create_entry = MagicMock(return_value={"type": "create_entry"})
+    with patch.object(
+        flow,
+        "_get_entry",
+        return_value=SimpleNamespace(state=ConfigEntryState.LOADED, subentries={}),
+    ):
+        flow._finalize_subentry(
+            {
+                CONF_MODEL: "opencode-go/deepseek-v4.1-flash",
+                CONF_NAME: "OpenCode Go",
+                CONF_IMAGE_GENERATION: True,
+            }
+        )
+
+    data = flow.async_create_entry.call_args.kwargs["data"]
+    assert data[CONF_IMAGE_GENERATION] is False

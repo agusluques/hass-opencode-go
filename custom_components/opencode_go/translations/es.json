@@ -95,13 +95,11 @@
           "data": {
             "recommended": "Ajustes de modelo recomendados",
             "model": "Modelo",
-            "name": "Nombre",
-            "image_generation": "Generar imágenes"
+            "name": "Nombre"
           },
           "data_description": {
             "model": "Modelo que usará esta tarea de IA. La lista se carga desde tu catálogo de OpenCode Go.",
-            "name": "Nombre usado para el device y los entity IDs. Los selectores y listas de entidades muestran este nombre junto al modelo actual, así podés cambiar el modelo sin renombrar entidades.",
-            "image_generation": "Publica ai_task.generate_image. Solo los modelos Responses (por ejemplo gpt-6-luna o grok-4.7) pueden generar imágenes; en otros modelos se ignora."
+            "name": "Nombre usado para el device y los entity IDs. Los selectores y listas de entidades muestran este nombre junto al modelo actual, así podés cambiar el modelo sin renombrar entidades."
           }
         },
         "advanced": {
@@ -110,12 +108,14 @@
             "model": "Modelo",
             "reasoning_effort": "Esfuerzo de razonamiento",
             "reasoning_summary": "Resumen de razonamiento",
-            "text_verbosity": "Verbosidad del texto"
+            "text_verbosity": "Verbosidad del texto",
+            "image_generation": "Generar imágenes"
           },
           "data_description": {
             "reasoning_effort": "Cuántos tokens de razonamiento debe generar el modelo antes de responder.",
             "reasoning_summary": "Controla la longitud y el detalle del resumen de razonamiento.",
-            "text_verbosity": "Controla la verbosidad del texto del modelo."
+            "text_verbosity": "Controla la verbosidad del texto del modelo.",
+            "image_generation": "Publica ai_task.generate_image para esta AI Task. Solo los modelos Responses pueden generar imágenes; esta opción solo aparece para ellos."
           }
         }
       }

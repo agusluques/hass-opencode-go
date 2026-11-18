@@ -60,7 +60,8 @@ A Home Assistant custom integration that turns **[OpenCode Go](https://opencode.
      becomes `OpenCode Go 2`, and so on. It drives the device name and entity
      ID (`conversation.open_code_go_2`, `ai_task.open_code_go`).
    - **Model** — changing it later does **not** change the entity ID; the
-     current model is exposed as a device/entity attribute.
+     current model is exposed as a device/entity attribute. Models marked with
+     🖼 use the Responses protocol and may generate images.
    - **Control Home Assistant** — exposes entities and services through the
      Assist API so the model can control devices. It is enabled by default.
    - **Recommended model settings** — keep this on to use the suggested prompt,
@@ -91,9 +92,10 @@ the plan. There is **no hardcoded model list and no default model**.
 
 ## Image generation
 
-Image generation is exposed through the AI Task platform. Enable **Generate
-images** when adding the AI Task (it is on by default; only Responses models
-can generate images, and the option is ignored for the rest).
+Image generation is exposed through the AI Task platform. The **Generate
+images** toggle lives in **Advanced settings** and only appears when the
+selected model is a Responses model (marked with 🖼 in the picker). It is on by
+default; other models cannot generate images.
 
 1. Add an **AI Task** subentry with a Responses model
    (`gpt-5.6-luna`, `gpt-6-luna` or `grok-4.7`).
@@ -111,6 +113,15 @@ can generate images, and the option is ignored for the rest).
 The generated PNG is stored in the AI Task media folder, so it can be used in
 dashboards, notifications and automations. Only Responses models advertise this
 feature; chat, Anthropic and Google models in the Go plan are text-only.
+
+### Native tools and web search
+
+The catalog marks `search` for `gpt-5.6-luna`, `gpt-6-luna` and
+`claude-haiku-5-5`, but OpenCode Go currently ignores the provider web-search
+tools (`web_search`, `web_search_preview` and `web_search_20250305` all return
+normal answers with `tool_usage.web_search.num_requests = 0`). Image generation
+is the only provider tool the proxy exposes today. For web search, expose a
+search tool to the model through the Assist LLM API instead.
 
 ## Troubleshooting
 

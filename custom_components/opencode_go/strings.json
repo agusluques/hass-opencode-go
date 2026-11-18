@@ -95,13 +95,11 @@
           "data": {
             "recommended": "Recommended model settings",
             "model": "Model",
-            "name": "Name",
-            "image_generation": "Generate images"
+            "name": "Name"
           },
           "data_description": {
             "model": "Model to use for this AI task. The list is loaded from your OpenCode Go catalog.",
-            "name": "Name used for the device and entity IDs. Pickers and entity lists show this name plus the current model, so you can change the model without renaming entities.",
-            "image_generation": "Advertise ai_task.generate_image. Only Responses models (for example gpt-6-luna or grok-4.7) can generate images; this is ignored for other models."
+            "name": "Name used for the device and entity IDs. Pickers and entity lists show this name plus the current model, so you can change the model without renaming entities."
           }
         },
         "advanced": {
@@ -110,12 +108,14 @@
             "model": "Model",
             "reasoning_effort": "Reasoning effort",
             "reasoning_summary": "Reasoning summary",
-            "text_verbosity": "Text verbosity"
+            "text_verbosity": "Text verbosity",
+            "image_generation": "Generate images"
           },
           "data_description": {
             "reasoning_effort": "How many reasoning tokens the model should generate before responding.",
             "reasoning_summary": "Controls the length and detail of the reasoning summary.",
-            "text_verbosity": "Controls the verbosity of the model's text output."
+            "text_verbosity": "Controls the verbosity of the model's text output.",
+            "image_generation": "Expose ai_task.generate_image for this AI Task. Only Responses models can generate images; this option only appears for them."
           }
         }
       }

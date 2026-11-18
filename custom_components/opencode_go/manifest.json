@@ -15,5 +15,5 @@
   "requirements": [
     "voluptuous-openapi==0.4.1"
   ],
-  "version": "0.6.1"
+  "version": "0.7.0"
 }

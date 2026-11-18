@@ -51,9 +51,21 @@ from .opencode_api import (
     OpenCodeGoClient,
     OpenCodeGoRateLimited,
     OpenCodeGoServerOverloaded,
+    supports_image_generation,
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _model_select_options(models: list[str]) -> list[SelectOptionDict]:
+    """Return selector options, marking models that may generate images."""
+    return [
+        SelectOptionDict(
+            value=model,
+            label=f"{model} 🖼" if supports_image_generation(model) else model,
+        )
+        for model in models
+    ]
 
 
 async def _async_validate_api_key(hass, api_key: str) -> None:
@@ -149,6 +161,9 @@ class OpenCodeGoConversationConfigFlow(ConfigFlow, domain=DOMAIN):
                             **RECOMMENDED_AI_TASK_OPTIONS,
                             CONF_MODEL: ai_task_model,
                             CONF_NAME: DEFAULT_NAME,
+                            CONF_IMAGE_GENERATION: supports_image_generation(
+                                ai_task_model
+                            ),
                         },
                         "title": ai_task_model.removeprefix("opencode-go/"),
                         "unique_id": None,
@@ -171,10 +186,10 @@ class OpenCodeGoConversationConfigFlow(ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema(
                 {
                     vol.Required(CONF_CONVERSATION_MODEL): SelectSelector(
-                        SelectSelectorConfig(options=list(models))
+                        SelectSelectorConfig(options=_model_select_options(models))
                     ),
                     vol.Required(CONF_AI_TASK_MODEL): SelectSelector(
-                        SelectSelectorConfig(options=list(models))
+                        SelectSelectorConfig(options=_model_select_options(models))
                     ),
                 }
             ),
@@ -296,13 +311,6 @@ class _BaseOpenCodeGoSubentryFlow(ConfigSubentryFlow):
                     str(user_input.get(CONF_NAME) or "").strip()
                     or self._next_subentry_name()
                 )
-                if self._supports_image_generation_option:
-                    data[CONF_IMAGE_GENERATION] = bool(
-                        user_input.get(
-                            CONF_IMAGE_GENERATION,
-                            self._default_data.get(CONF_IMAGE_GENERATION, True),
-                        )
-                    )
                 if self._supports_prompt_and_apis:
                     data[CONF_PROMPT] = (
                         user_input.get(CONF_PROMPT) or llm.DEFAULT_INSTRUCTIONS_PROMPT
@@ -339,7 +347,7 @@ class _BaseOpenCodeGoSubentryFlow(ConfigSubentryFlow):
 
         step_schema: dict = {
             model_key: SelectSelector(
-                SelectSelectorConfig(options=list(model_options))
+                SelectSelectorConfig(options=_model_select_options(model_options))
             ),
             vol.Optional(
                 CONF_NAME,
@@ -349,13 +357,6 @@ class _BaseOpenCodeGoSubentryFlow(ConfigSubentryFlow):
                 },
             ): str,
         }
-        if self._supports_image_generation_option:
-            step_schema[
-                vol.Required(
-                    CONF_IMAGE_GENERATION,
-                    default=options.get(CONF_IMAGE_GENERATION, True),
-                )
-            ] = bool
         if self._supports_prompt_and_apis:
             hass_apis: list[SelectOptionDict] = [
                 {"value": api.id, "label": api.name}
@@ -405,42 +406,46 @@ class _BaseOpenCodeGoSubentryFlow(ConfigSubentryFlow):
             data = {**self._init_data, **user_input}
             return self._finalize_subentry(data)
 
+        step_schema: dict = {
+            vol.Required(
+                CONF_REASONING_EFFORT,
+                default=options.get(
+                    CONF_REASONING_EFFORT, RECOMMENDED_REASONING_EFFORT
+                ),
+            ): SelectSelector(SelectSelectorConfig(options=["low", "medium", "high"])),
+            vol.Required(
+                CONF_REASONING_SUMMARY,
+                default=options.get(
+                    CONF_REASONING_SUMMARY, RECOMMENDED_REASONING_SUMMARY
+                ),
+            ): SelectSelector(
+                SelectSelectorConfig(options=["auto", "short", "detailed", "off"])
+            ),
+            vol.Required(
+                CONF_TEXT_VERBOSITY,
+                default=options.get(CONF_TEXT_VERBOSITY, RECOMMENDED_TEXT_VERBOSITY),
+            ): SelectSelector(SelectSelectorConfig(options=["low", "medium", "high"])),
+        }
+        model = str(self._init_data.get(CONF_MODEL) or options.get(CONF_MODEL) or "")
+        if self._supports_image_generation_option and supports_image_generation(model):
+            step_schema[
+                vol.Required(
+                    CONF_IMAGE_GENERATION,
+                    default=options.get(CONF_IMAGE_GENERATION, True),
+                )
+            ] = bool
+
         return self.async_show_form(
             step_id="advanced",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(
-                        CONF_REASONING_EFFORT,
-                        default=options.get(
-                            CONF_REASONING_EFFORT, RECOMMENDED_REASONING_EFFORT
-                        ),
-                    ): SelectSelector(
-                        SelectSelectorConfig(options=["low", "medium", "high"])
-                    ),
-                    vol.Required(
-                        CONF_REASONING_SUMMARY,
-                        default=options.get(
-                            CONF_REASONING_SUMMARY, RECOMMENDED_REASONING_SUMMARY
-                        ),
-                    ): SelectSelector(
-                        SelectSelectorConfig(
-                            options=["auto", "short", "detailed", "off"]
-                        )
-                    ),
-                    vol.Required(
-                        CONF_TEXT_VERBOSITY,
-                        default=options.get(
-                            CONF_TEXT_VERBOSITY, RECOMMENDED_TEXT_VERBOSITY
-                        ),
-                    ): SelectSelector(
-                        SelectSelectorConfig(options=["low", "medium", "high"])
-                    ),
-                }
-            ),
+            data_schema=vol.Schema(step_schema),
         )
 
     def _finalize_subentry(self, data: dict[str, Any]) -> SubentryFlowResult:
         model = data.get(CONF_MODEL) or ""
+        if self._supports_image_generation_option:
+            data[CONF_IMAGE_GENERATION] = bool(
+                data.get(CONF_IMAGE_GENERATION, True)
+            ) and supports_image_generation(str(model))
         data[CONF_NAME] = (
             str(data.get(CONF_NAME) or "").strip() or self._next_subentry_name()
         )

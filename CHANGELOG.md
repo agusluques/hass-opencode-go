@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-18
+
+### Added
+
+- Model pickers mark Responses models with 🖼, a hint that they may support
+  image generation.
+- The **Generate images** toggle moved to **Advanced settings** and is only
+  shown when the selected model is a Responses model.
+- The initial setup stores the image-generation flag based on the chosen AI Task
+  model.
+
+### Changed
+
+- Client user agent bumped to `hass-opencode-go/0.7.0`.
+
+### Notes
+
+- The catalog advertises native web search for some models, but OpenCode Go
+  ignores the provider web-search tools today, so the integration does not
+  expose them.
+
 ## [0.6.1] - 2026-11-17
 
 ### Fixed
@@ -147,7 +168,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - API key config flow, conversation agent and AI Task support.
 - HACS-compatible repository layout and initial brand assets.
 
-[Unreleased]: https://github.com/agusluques/hass-opencode-go/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/agusluques/hass-opencode-go/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/agusluques/hass-opencode-go/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/agusluques/hass-opencode-go/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/agusluques/hass-opencode-go/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/agusluques/hass-opencode-go/compare/v0.4.1...v0.5.0
